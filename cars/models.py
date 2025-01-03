@@ -29,7 +29,7 @@ class Car(models.Model):
     year = models.IntegerField(default=2024)
     price_min = models.IntegerField()
     price_max = models.IntegerField()
-    
+
     def clean(self):
         if self.price_max < self.price_min:
             raise ValidationError("Maximum price cannot be less than minimum price")
@@ -43,7 +43,7 @@ class Engine(models.Model):
         ("W", "W"),
         ("R", "Rotary/Wankel"),
     )
-    
+
     ASPIRATION_TYPES = (
         ("T", "Turbocharged"),
         ("S", "Supercharged"),
@@ -93,7 +93,9 @@ class Performance(models.Model):
 
     def clean(self):
         if self.acceleration_max < self.acceleration_min:
-            raise ValidationError("Maximum acceleration time cannot be less than minimum acceleration time")
+            raise ValidationError(
+                "Maximum acceleration time cannot be less than minimum acceleration time"
+            )
 
 
 class TagCategory(models.Model):
@@ -107,6 +109,7 @@ class TagCategory(models.Model):
         ("performance_metrics", "Performance Metrics"),
     ]
     name = models.CharField(max_length=50, choices=CATEGORY_CHOICES, unique=True)
+
 
 class Tag(models.Model):
     # Price range tags
@@ -140,11 +143,17 @@ class Tag(models.Model):
     cars = models.ManyToManyField("Car")
 
     def clean(self):
-        if self.category.name == "price_range" and self.value not in dict(self.PRICE_RANGE_CHOICES):
+        if self.category.name == "price_range" and self.value not in dict(
+            self.PRICE_RANGE_CHOICES
+        ):
             raise ValidationError("Invalid price range value")
-        elif self.category.name == "displacement" and self.value not in dict(self.DISPLACEMENT_CHOICES):
+        elif self.category.name == "displacement" and self.value not in dict(
+            self.DISPLACEMENT_CHOICES
+        ):
             raise ValidationError("Invalid displacement value")
-        elif self.category.name == "performance_metrics" and self.value not in dict(self.PERFORMANCE_METRICS_CHOICES):
+        elif self.category.name == "performance_metrics" and self.value not in dict(
+            self.PERFORMANCE_METRICS_CHOICES
+        ):
             raise ValidationError("Invalid performance metrics value")
         super().clean()
 

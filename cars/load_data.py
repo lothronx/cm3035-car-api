@@ -153,6 +153,4 @@ def load_data(csv_file_path: str) -> None:
                 _create_car(car_data)
                 processed_cars.add(car_name)
             except Exception as e:
-                raise Exception(
-                    f"Failed to process car data: {str(e)}. Car: {car_name}"
-                ) from e
+                raise Exception(f"Failed to process car data: {str(e)}") from e

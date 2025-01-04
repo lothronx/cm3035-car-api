@@ -3,7 +3,6 @@ Data models for the cars app.
 """
 
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from cars.utils.tag_helpers import create_car_tags
 
@@ -49,16 +48,14 @@ class Performance(models.Model):
         acceleration_max (float): Maximum time from 0 to 100 km/h in seconds
     """
 
-    top_speed = models.IntegerField(null=True, help_text="Top speed in km/h")
+    top_speed = models.IntegerField(null=True, help_text="Unit: km/h")
     acceleration_min = models.FloatField(
-        validators=[MinValueValidator(0.1), MaxValueValidator(30)],
         null=True,
-        help_text="Minimal acceleration time from 0 to 100 km/h in seconds",
+        help_text="Unit: seconds",
     )
     acceleration_max = models.FloatField(
-        validators=[MinValueValidator(0.1), MaxValueValidator(30)],
         null=True,
-        help_text="Maximal acceleration time from 0 to 100 km/h in seconds",
+        help_text="Unit: seconds",
     )
 
 
@@ -85,8 +82,8 @@ class Car(models.Model):
     performance = models.OneToOneField(Performance, on_delete=models.PROTECT, null=True)
     seats = models.CharField(max_length=10)
     year = models.IntegerField(default=2024)
-    price_min = models.IntegerField()
-    price_max = models.IntegerField()
+    price_min = models.IntegerField(null=True)
+    price_max = models.IntegerField(null=True)
 
     def save(self, *args, **kwargs):
         """Overrides the default save method to create associated tags."""
@@ -128,16 +125,12 @@ class Engine(models.Model):
     cylinder_layout = models.CharField(
         max_length=1, choices=CYLINDER_LAYOUTS, null=True
     )
-    cylinder_count = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(32)], null=True
-    )
+    cylinder_count = models.PositiveSmallIntegerField(null=True)
     aspiration = models.CharField(max_length=1, choices=ASPIRATION_TYPES, null=True)
-    engine_capacity = models.PositiveIntegerField(
-        null=True, help_text="Engine capacity in cc"
-    )
-    battery_capacity = models.FloatField(null=True, help_text="Battery capacity in kWh")
-    horsepower = models.PositiveIntegerField(null=True, help_text="Horsepower in hp")
-    torque = models.PositiveIntegerField(null=True, help_text="Torque in Nm")
+    engine_capacity = models.PositiveIntegerField(null=True, help_text="Unit: cc")
+    battery_capacity = models.FloatField(null=True, help_text="Unit: kWh")
+    horsepower = models.PositiveIntegerField(null=True, help_text="Unit: hp")
+    torque = models.PositiveIntegerField(null=True, help_text="Unit: Nm")
     car = models.ForeignKey(Car, on_delete=models.CASCADE)
 
     @property

@@ -40,9 +40,10 @@ def create_car_tags(car):
     _create_tag(car, categories["seats"], f"{car.seats} seatings")
 
     # Create price range tag
-    avg_price = (car.price_min + car.price_max) / 2
-    price_range = _get_price_range(avg_price)
-    _create_tag(car, categories["price_range"], price_range)
+    if car.price_min and car.price_max:
+        avg_price = (car.price_min + car.price_max) / 2
+        price_range = _get_price_range(avg_price)
+        _create_tag(car, categories["price_range"], price_range)
 
     # Create displacement tags
     for engine in car.engine_set.all():
@@ -135,7 +136,7 @@ def _create_performance_tags(car, category):
     # Get performance metrics
     if car.performance is not None:
         # Fast Acceleration tag
-        if car.performance.acceleration_min < 4.0:
+        if car.performance.acceleration_min and car.performance.acceleration_min < 4.0:
             _create_tag(car, category, "FAST_ACCELERATION")
 
         # Top Speed tag

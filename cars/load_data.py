@@ -4,6 +4,7 @@ Load and store car data from CSV files into the database.
 
 import csv
 import os
+import logging
 from typing import Dict, Any, Optional, List
 
 from django.db import transaction
@@ -20,6 +21,13 @@ from cars.data_cleaners import (
     parse_engine,
     _get_value_at_index,
 )
+
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 def create_performance(performance_data: Dict[str, Any]) -> Optional[Performance]:
@@ -62,17 +70,23 @@ def create_engines(car: Car, engine_data: Dict[str, Any]) -> None:
         car: Car object to associate engines with
         engine_data: Dictionary containing engine specifications
     """
-    # Get maximum number of engines from data
-    num_engines = max(len(values) for values in engine_data.values())
+    # Get maximum number of engines from non-None lists
+    valid_lists = [values for values in engine_data.values() if values is not None]
+    if not valid_lists:
+        # Create a default engine with all fields as None if no valid data
+        Engine.objects.create(car=car)
+        return
+
+    num_engines = max(len(values) for values in valid_lists)
 
     # Create engines
     for i in range(num_engines):
         config = _get_value_at_index(engine_data["configs"], i)
         Engine.objects.create(
             car=car,
-            cylinder_layout=config[0],
-            cylinder_count=config[1],
-            aspiration=config[2],
+            cylinder_layout=config[0] if config else None,
+            cylinder_count=config[1] if config else None,
+            aspiration=config[2] if config else None,
             engine_capacity=_get_value_at_index(engine_data["engine_capacities"], i),
             battery_capacity=_get_value_at_index(engine_data["battery_capacities"], i),
             horsepower=_get_value_at_index(engine_data["horsepowers"], i),
@@ -89,44 +103,69 @@ def load_data(csv_file_path: str) -> None:
     """
     with open(csv_file_path, "r", encoding="utf-8") as file:
         reader = csv.DictReader(file)
+        processed_cars = set()
 
         for row in reader:
-            # Create or get brand
-            brand = Brand.objects.get_or_create(
-                name=row["Company Names"].strip().title()
-            )[0]
+            car_name = row["Cars Names"].strip()
 
-            # Clean and prepare performance data
-            performance_data = {
-                "top_speed": clean_top_speed(row["Total Speed"]),
-                "acceleration": clean_acceleration(row["Performance(0 - 100 )KM/H"]),
-            }
-            performance = create_performance(performance_data)
+            if car_name in processed_cars:
+                logger.info(f"Skipping duplicate car: {car_name}")
+                continue
 
-            # Clean and prepare price data
-            price_min, price_max = clean_price(row["Cars Prices"])
+            try:
+                # Clean and prepare performance data
+                logger.debug(f"Processing performance data for car: {car_name}")
+                logger.debug(f"Raw speed value: '{row['Total Speed']}'")
+                logger.debug(
+                    f"Raw acceleration value: '{row['Performance(0 - 100 )KM/H']}'"
+                )
 
-            # Add fuel types
-            fuel_types = create_fuel_types(clean_fuel_type(row["Fuel Types"]))
+                performance_data = {
+                    "top_speed": clean_top_speed(row["Total Speed"]),
+                    "acceleration": clean_acceleration(
+                        row["Performance(0 - 100 )KM/H"]
+                    ),
+                }
+                logger.debug(f"Cleaned performance data: {performance_data}")
+                performance = create_performance(performance_data)
 
-            # Create car
-            car = Car.objects.create(
-                name=row["Cars Names"].strip(),
-                slug=slugify(row["Cars Names"].strip()),
-                brand=brand,
-                performance=performance,
-                seats=row["Seats"].strip(),
-                price_min=price_min,
-                price_max=price_max,
-            )
-            car.fuel_type.set(fuel_types)
+                # Clean and prepare price data
+                price_min, price_max = clean_price(row["Cars Prices"])
 
-            # Clean and prepare engine data
-            engine_data = {
-                "configs": parse_engine(row["Engines"]),
-                "engine_capacities": clean_capacity(row["CC/Battery Capacity"])[0],
-                "battery_capacities": clean_capacity(row["CC/Battery Capacity"])[1],
-                "horsepowers": clean_power_values(row["HorsePower"]),
-                "torques": row["Torque"],
-            }
-            create_engines(car, engine_data)
+                # Create or get brand
+                brand = Brand.objects.get_or_create(
+                    name=row["Company Names"].strip().title()
+                )[0]
+
+                # Add fuel types
+                fuel_types = create_fuel_types(clean_fuel_type(row["Fuel Types"]))
+
+                # Create car
+                car = Car.objects.create(
+                    name=car_name,
+                    slug=slugify(car_name),
+                    brand=brand,
+                    performance=performance,
+                    seats=row["Seats"].strip(),
+                    price_min=price_min,
+                    price_max=price_max,
+                )
+                car.fuel_type.set(fuel_types)
+
+                # Clean and prepare engine data
+                engine_data = {
+                    "configs": parse_engine(row["Engines"]),
+                    "engine_capacities": clean_capacity(row["CC/Battery Capacity"])[0],
+                    "battery_capacities": clean_capacity(row["CC/Battery Capacity"])[1],
+                    "horsepowers": clean_power_values(row["HorsePower"]),
+                    "torques": clean_power_values(row["Torque"]),
+                }
+                logger.debug(f"Engine data for {car_name}: {engine_data}")
+                create_engines(car, engine_data)
+
+                processed_cars.add(car_name)
+                logger.info(f"Successfully created car: {car_name}")
+
+            except Exception as e:
+                logger.error(f"Error processing car {car_name}: {str(e)}")
+                continue

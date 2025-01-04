@@ -7,16 +7,16 @@ import re
 from typing import Optional, Tuple, List, Any
 
 
-def _get_value_at_index(lst: list, index: int) -> Any:
+def _get_value_at_index(lst: Optional[list], index: int) -> Any:
     """Get value at index, with special handling for empty lists and out of range indices.
 
     Args:
-        lst: List of values
+        lst: List of values or None
         index: Desired index
 
     Returns:
         Value at index, first value if index is 1 and out of range,
-        last value for other out of range indices, or None if list is empty
+        last value for other out of range indices, or None if list is empty or None
     """
     if not lst:
         return None
@@ -55,6 +55,7 @@ def clean_acceleration(
     if not acceleration_str:
         return (None, None)
 
+    acceleration_str = acceleration_str.replace(" ", "")
     numbers = re.findall(r"\d+\.\d+", acceleration_str)
     if not numbers:
         return (None, None)
@@ -113,7 +114,7 @@ def clean_fuel_type(fuel_type_str: str) -> List[str]:
     }
 
     if not fuel_type_str:
-        return []
+        return None
 
     # First replace separators and parentheses with spaces, then find all words
     # This handles formats like "CNG/Petrol", "Petrol, Diesel", "Hybrid (Petrol)"
@@ -129,23 +130,23 @@ def clean_fuel_type(fuel_type_str: str) -> List[str]:
     return sorted(list(fuel_types))
 
 
-def clean_power_values(value_str: str) -> List[int]:
+def clean_power_values(value_str: str) -> Optional[List[int]]:
     """Extract numeric values from horsepower or torque strings.
 
     Args:
         value_str: String containing power values
 
     Returns:
-        List of integer values
+        List of integer values or None if no valid values found
     """
     if not value_str:
-        return []
+        return None
 
     numbers = re.findall(r"\d+", value_str.replace(",", ""))
-    return [int(num) for num in numbers] if numbers else []
+    return [int(num) for num in numbers] if numbers else None
 
 
-def clean_capacity(capacity_str: str) -> Tuple[List[int], List[int]]:
+def clean_capacity(capacity_str: str) -> Tuple[Optional[List[int]], Optional[List[int]]]:
     """Extract engine and battery capacity values.
 
     Args:
@@ -155,7 +156,7 @@ def clean_capacity(capacity_str: str) -> Tuple[List[int], List[int]]:
         Tuple of (engine_capacities, battery_capacities) in cc and kWh
     """
     if not capacity_str:
-        return ([], [])
+        return (None, None)
 
     engine_capacities = set()
     battery_capacities = set()

@@ -1,215 +1,112 @@
+"""
+Load and store car data from CSV files into the database.
+"""
+
 import csv
-import re
 import os
-import sys
-from decimal import Decimal
-import django
-from django.utils.text import slugify
+from typing import Dict, Any, Optional, List
+
 from django.db import transaction
-from cars.models import Brand, Car, Engine, Performance, Fuel_Type
+from django.utils.text import slugify
+
+from cars.models import Brand, Car, Engine, Performance, FuelType
+from cars.data_cleaners import (
+    clean_top_speed,
+    clean_acceleration,
+    clean_price,
+    clean_fuel_type,
+    clean_power_values,
+    clean_capacity,
+    parse_engine,
+    _get_value_at_index,
+)
 
 
-def clean_top_speed(speed_str) -> int:
-    # Find the numeric part of the string
-    numbers = re.findall(r"\d+", speed_str)
-    # Convert to integer if there is a number, otherwise return None
-    return int(numbers[0]) if numbers else None
+def create_performance(performance_data: Dict[str, Any]) -> Optional[Performance]:
+    """Create a Performance object from cleaned data.
+
+    Args:
+        performance_data: Dictionary containing top_speed and acceleration values
+
+    Returns:
+        Performance object or None if data is invalid
+    """
+    if not performance_data.get("top_speed") or not all(
+        performance_data.get("acceleration")
+    ):
+        return None
+
+    return Performance.objects.create(
+        top_speed=performance_data["top_speed"],
+        acceleration_min=performance_data["acceleration"][0],
+        acceleration_max=performance_data["acceleration"][1],
+    )
 
 
-def clean_acceleration(acceleration_str) -> tuple[float, float]:
-    # Find all decimal numbers in the string
-    numbers = re.findall(r"\d+\.\d+", acceleration_str)
+def create_fuel_types(fuel_codes: List[str]) -> List[FuelType]:
+    """Create or get FuelType objects for given codes.
 
-    # Return None for invalid accelerations like "N/A"
-    if not numbers:
-        return (None, None)
+    Args:
+        fuel_codes: List of fuel type codes (P, D, E, etc.)
 
-    # Convert found numbers to floats
-    accelerations = (float(num) for num in numbers)
-
-    # Return tuple of (min_acceleration, max_acceleration)
-    return (min(accelerations), max(accelerations))
+    Returns:
+        List of FuelType objects
+    """
+    return [FuelType.objects.get_or_create(fuel_type=code)[0] for code in fuel_codes]
 
 
-def clean_price(price_str) -> tuple[int, int]:
-    numbers = re.findall(r"\$?(\d+)", price_str.replace(",", ""))
-    if not numbers:
-        return (None, None)
-    prices = (int(num) for num in numbers)
-    # Return tuple of (min_price, max_price)
-    return (min(prices), max(prices))
+def create_engines(car: Car, engine_data: Dict[str, Any]) -> None:
+    """Create Engine objects for a car.
 
+    Args:
+        car: Car object to associate engines with
+        engine_data: Dictionary containing engine specifications
+    """
+    # Get maximum number of engines from data
+    num_engines = max(len(values) for values in engine_data.values())
 
-def clean_fuel_type(fuel_type_str) -> list[str]:
-    # Map common fuel types to their abbreviations
-    FUEL_TYPE_MAPPING = {
-        "petrol": "P",
-        "diesel": "D",
-        "electric": "E",
-        "ev": "E",
-        "hydrogen": "H",
-        "cng": "C",
-        "hybrid": "X",
-    }
-
-    # Initialize set to hold unique fuel types
-    fuel_types = set()
-
-    # Split the string into individual parts
-    parts = re.findall(r"\w+", fuel_type_str.lower())
-
-    # Check each part against our mapping
-    for part in parts:
-        if part in FUEL_TYPE_MAPPING:
-            fuel_types.add(FUEL_TYPE_MAPPING[part])
-
-    # Convert set to sorted list for consistency
-    return sorted(list(fuel_types))
-
-
-def clean_horsepower(horsepower_str) -> list[int]:
-    numbers = re.findall(r"\d+", horsepower_str.replace(",", ""))
-    if not numbers:
-        return []
-    return [int(num) for num in numbers]
-
-
-def clean_torque(torque_str) -> list[int]:
-    numbers = re.findall(r"\d+", torque_str.replace(",", ""))
-    if not numbers:
-        return []
-    return [int(num) for num in numbers]
-
-
-def clean_capacity(capacity_str) -> tuple[list[int], list[int]]:
-    # Initialize sets to hold capacities
-    engine_capacities = set()
-    battery_capacities = set()
-
-    # Convert to lowercase for consistent processing
-    capacity_str = capacity_str.lower()
-
-    # Use regex to find all capacity-related parts, including ranges
-    # First, handle ranges
-    range_pattern = r"(\d+(?:,\d{3})*)\s*-\s*(\d+(?:,\d{3})*)\s*(?:cc|kwh)"
-    for match in re.finditer(range_pattern, capacity_str):
-        start = int(match.group(1).replace(",", ""))
-        end = int(match.group(2).replace(",", ""))
-        if "cc" in match.group():
-            engine_capacities.add(start)
-            engine_capacities.add(end)
-        else:
-            battery_capacities.add(start)
-            battery_capacities.add(end)
-
-    # Then handle single values
-    single_pattern = r"(\d+(?:,\d{3})*)\s*(?:cc|kwh)"
-    for match in re.finditer(single_pattern, capacity_str):
-        value = int(match.group(1).replace(",", ""))
-        if "cc" in match.group():
-            engine_capacities.add(value)
-        else:
-            battery_capacities.add(value)
-
-    # Remove duplicates and sort
-    engine_capacities = sorted(list(engine_capacities))
-    battery_capacities = sorted(list(battery_capacities))
-
-    # Return the capacities
-    return (engine_capacities, battery_capacities)
-
-
-def parse_engine(engine_str) -> list[tuple[str, int, str]]:
-    CYLINDER_LAYOUT_MAPPING = {
-        "INLINE": "I",
-        "STRAIGHT": "I",
-        "V": "V",
-        "FLAT": "F",
-        "BOXER": "F",
-        "W": "W",
-        "ROTARY": "R",
-        "WANKEL": "R",
-    }
-
-    ASPIRATION_MAPPING = {
-        "NATURALLY ASPIRATED": "N",
-        "QUAD TURBO": "Q",
-        "QUAD-TURBO": "Q",
-        "TWIN TURBO": "W",
-        "TWIN-TURBO": "W",
-        "TURBO": "T",
-        "SUPERCHARGED": "S",
-    }
-
-    ENGINE_PATTERNS = [
-        r"(\d+)-CYLINDER",  # e.g., "4-CYLINDER"
-        r"\b\(?[IVFWR](\d+)\)?\b",  # e.g., "V8", "(I4)"
-        r"\b(?:INLINE|STRAIGHT|BOXER|FLAT|ROTARY|WANKEL)-(\d+)\b",  # e.g., "INLINE-4", "BOXER-4"
-    ]
-
-    # Initialize an empty list to hold the parsed engines
-    engine_list = []
-
-    # Split the engine string into parts. The separator can be either "/" or "OR"
-    engines = re.split(r"\s*/\s*|\s+OR\s+", engine_str)
-
-    for engine in engines:
-        # Initialize variables
-        cylinder_layout = None
-        cylinder_count = None
-        aspiration = None
-
-        # Convert to uppercase and clean the string
-        engine = engine.upper().replace(",", " ")
-
-        # Extract cylinder count
-        for pattern in ENGINE_PATTERNS:
-            match = re.search(pattern, engine)
-            if match:
-                cylinder_count = int(match.group(1))
-                break
-
-        # Extract cylinder layout
-        for layout, abbrev in CYLINDER_LAYOUT_MAPPING.items():
-            if re.search(rf"\b{layout}(?:\d+|-\d+)?\b", engine) or re.search(
-                rf"\b{abbrev}(?:\d+)?\b", engine
-            ):
-                cylinder_layout = abbrev
-                break
-
-        # Extract aspiration
-        for asp, abbrev in ASPIRATION_MAPPING.items():
-            if asp in engine:
-                aspiration = abbrev
-                break
-
-        if cylinder_count or cylinder_layout or aspiration:
-            engine_list.append((cylinder_layout, cylinder_count, aspiration))
-
-    return engine_list
+    # Create engines
+    for i in range(num_engines):
+        config = _get_value_at_index(engine_data["configs"], i)
+        Engine.objects.create(
+            car=car,
+            cylinder_layout=config[0],
+            cylinder_count=config[1],
+            aspiration=config[2],
+            engine_capacity=_get_value_at_index(engine_data["engine_capacities"], i),
+            battery_capacity=_get_value_at_index(engine_data["battery_capacities"], i),
+            horsepower=_get_value_at_index(engine_data["horsepowers"], i),
+            torque=_get_value_at_index(engine_data["torques"], i),
+        )
 
 
 @transaction.atomic
-def load_and_store(csv_file_path):
+def load_and_store(csv_file_path: str) -> None:
+    """Load car data from CSV and store in database.
+
+    Args:
+        csv_file_path: Path to CSV file containing car data
+    """
     with open(csv_file_path, "r", encoding="utf-8") as file:
         reader = csv.DictReader(file)
 
         for row in reader:
-            # For the Brand table: Get or create the brand
-            brand, _ = Brand.objects.get_or_create(
+            # Create or get brand
+            brand = Brand.objects.get_or_create(
                 name=row["Company Names"].strip().title()
-            )
+            )[0]
 
-            # For the Performance table: Create the performance
-            acc_min, acc_max = clean_acceleration(row["Performance(0 - 100 )KM/H"])
-            performance = Performance.objects.create(
-                top_speed=clean_top_speed(row["Top Speed"]),
-                acceleration_min=acc_min,
-                acceleration_max=acc_max,
-            )
+            # Clean and prepare performance data
+            performance_data = {
+                "top_speed": clean_top_speed(row["Top Speed"]),
+                "acceleration": clean_acceleration(row["Performance(0 - 100 )KM/H"]),
+            }
+            performance = create_performance(performance_data)
 
-            # For the Car table: Create the car
+            # Clean and prepare price data
             price_min, price_max = clean_price(row["Price"])
+
+            # Create car
             car = Car.objects.create(
                 name=row["Cars Names"].strip(),
                 slug=slugify(row["Cars Names"].strip()),
@@ -220,17 +117,19 @@ def load_and_store(csv_file_path):
                 price_max=price_max,
             )
 
-            # For the Fuel_Type table: Get or create the fuel types and add them to the car
-            fuel_types = clean_fuel_type(row["Fuel Types"])
-            for fuel_type in fuel_types:
-                fuel_type, _ = Fuel_Type.objects.get_or_create(fuel_type=fuel_type)
-                car.fuel_type.add(fuel_type)
+            # Add fuel types
+            fuel_types = create_fuel_types(clean_fuel_type(row["Fuel Types"]))
+            car.fuel_type.set(fuel_types)
 
-            # For the Engine table: Create the engines and add them to the car
-            engines = parse_engine(row["Engine"])
-            engine_capacities, battery_capacities = clean_capacity(row["Capacity"])
-            torques = clean_torque(row["Torque"])
-            horsepowers = clean_horsepower(row["Horsepower"])
+            # Clean and prepare engine data
+            engine_data = {
+                "configs": parse_engine(row["Engine"]),
+                "engine_capacities": clean_capacity(row["Capacity"])[0],
+                "battery_capacities": clean_capacity(row["Capacity"])[1],
+                "horsepowers": clean_power_values(row["Horsepower"]),
+                "torques": clean_power_values(row["Torque"]),
+            }
+            create_engines(car, engine_data)
 
 
 if __name__ == "__main__":

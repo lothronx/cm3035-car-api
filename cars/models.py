@@ -5,6 +5,7 @@ Data models for the cars app.
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
+from cars.utils.tag_helpers import create_car_tags
 
 
 # Create your models here.
@@ -25,13 +26,6 @@ class FuelType(models.Model):
 
     Attributes:
         fuel_type (CharField): Single character code representing the fuel type.
-            Choices are:
-            - P: Petrol
-            - D: Diesel
-            - E: Electric
-            - H: Hydrogen
-            - C: Compressed Natural Gas
-            - X: Hybrid
     """
 
     FUEL_TYPES = (
@@ -67,18 +61,6 @@ class Performance(models.Model):
         help_text="Maximal acceleration time from 0 to 100 km/h in seconds",
     )
 
-    def clean(self):
-        """
-        Validates that the maximum acceleration time is not less than the minimum acceleration time.
-
-        Raises:
-            ValidationError: If acceleration_max is less than acceleration_min
-        """
-        if self.acceleration_max < self.acceleration_min:
-            raise ValidationError(
-                "Maximum acceleration time cannot be less than minimum acceleration time"
-            )
-
 
 class Car(models.Model):
     """
@@ -106,149 +88,10 @@ class Car(models.Model):
     price_min = models.IntegerField()
     price_max = models.IntegerField()
 
-    def clean(self):
-        """
-        Validates that the maximum price is not less than the minimum price.
-
-        Raises:
-            ValidationError: If price_max is less than price_min
-        """
-        if self.price_max < self.price_min:
-            raise ValidationError("Maximum price cannot be less than minimum price")
-
-    def _create_tag(self, category, value):
-        """
-        Creates and associates a tag with the car.
-
-        Args:
-            category (TagCategory): The category of the tag
-            value (str): The value for the tag
-
-        Returns:
-            Tag: The created or existing tag object
-        """
-        tag, _ = Tag.objects.get_or_create(category=category, value=value)
-        tag.cars.add(self)
-        return tag
-
-    def _get_price_range(self, avg_price):
-        """
-        Determines the price range category based on average price.
-
-        Args:
-            avg_price (float): The average price of the car
-
-        Returns:
-            str: Price range category (ECONOMY, MID_RANGE, PREMIUM, LUXURY, or ULTRA_LUXURY)
-        """
-        ranges = [
-            (30000, "ECONOMY"),
-            (60000, "MID_RANGE"),
-            (100000, "PREMIUM"),
-            (200000, "LUXURY"),
-            (float("inf"), "ULTRA_LUXURY"),
-        ]
-        for limit, category in ranges:
-            if avg_price <= limit:
-                return category
-
-    def _get_displacement_category(self, capacity):
-        """
-        Determines the engine displacement category based on capacity.
-
-        Args:
-            capacity (int): Engine capacity in cc
-
-        Returns:
-            str: Displacement category (SMALL, LOW_MID, MID, LARGE, VERY_LARGE, or EXTREME)
-        """
-        ranges = [
-            (1000, "SMALL"),
-            (1600, "LOW_MID"),
-            (2500, "MID"),
-            (4000, "LARGE"),
-            (6000, "VERY_LARGE"),
-            (float("inf"), "EXTREME"),
-        ]
-        for limit, category in ranges:
-            if capacity <= limit:
-                return category
-
-    def _create_performance_tags(self, category):
-        """
-        Creates performance-related tags based on car specifications.
-
-        Args:
-            category (TagCategory): The performance metrics category
-        """
-        # High Torque tag (check all engines)
-        if any(engine.torque > 500 for engine in self.engine_set.all()):
-            self._create_tag(category, "HIGH_TORQUE")
-
-        # Get performance metrics
-        if self.performance is not None:
-            # Fast Acceleration tag
-            if self.performance.acceleration_min < 4.0:
-                self._create_tag(category, "FAST_ACCELERATION")
-
-            # Top Speed tag
-            if self.performance.top_speed > 250:
-                self._create_tag(category, "TOP_SPEED")
-
     def save(self, *args, **kwargs):
-        """
-        Overrides the default save method to create associated tags.
-
-        Creates tags for brand, fuel type, engine, seats, price range,
-        displacement, and performance metrics.
-        """
-        # Run validation
-        self.full_clean()
-        # First save the car instance
+        """Overrides the default save method to create associated tags."""
         super().save(*args, **kwargs)
-
-        # Get or create all tag categories
-        categories = {
-            "brand": None,
-            "fuel_type": None,
-            "engine": None,
-            "seats": None,
-            "price_range": None,
-            "displacement": None,
-            "performance_metrics": None,
-        }
-
-        for name in categories.keys():
-            categories[name], _ = TagCategory.objects.get_or_create(name=name)
-
-        # Create brand tag
-        self._create_tag(categories["brand"], self.brand.name)
-
-        # Create fuel type tags - now safe to access M2M field
-        for fuel in self.fuel_type.all():
-            self._create_tag(categories["fuel_type"], fuel.get_fuel_type_display())
-
-        # Create engine tags
-        for engine in self.engine_set.all():
-            if engine.engine:
-                self._create_tag(categories["engine"], engine.engine)
-
-        # Create seats tag
-        self._create_tag(categories["seats"], f"{self.seats} seatings")
-
-        # Create price range tag
-        avg_price = (self.price_min + self.price_max) / 2
-        price_range = self._get_price_range(avg_price)
-        self._create_tag(categories["price_range"], price_range)
-
-        # Create displacement tags
-        for engine in self.engine_set.all():
-            if engine.engine_capacity:
-                displacement = self._get_displacement_category(engine.engine_capacity)
-                self._create_tag(categories["displacement"], displacement)
-
-        # Create performance tags
-        self._create_performance_tags(categories["performance_metrics"])
+        create_car_tags(self)
 
 
 class Engine(models.Model):
@@ -256,21 +99,9 @@ class Engine(models.Model):
     Represents an engine configuration for a car.
 
     Attributes:
-        cylinder_layout (CharField): Engine cylinder arrangement
-            Choices are:
-            - I: Inline/Straight
-            - V: V
-            - F: Flat/Boxer
-            - W: W
-            - R: Rotary/Wankel
+        cylinder_layout (CharField): Single letter code for the cylinder layout
         cylinder_count (PositiveSmallIntegerField): Number of cylinders
-        aspiration (CharField): Engine aspiration type
-            Choices are:
-            - T: Turbocharged
-            - S: Supercharged
-            - W: Twin Turbo
-            - Q: Quad Turbo
-            - N: Naturally Aspirated
+        aspiration (CharField): Single letter code for the engine aspiration
         engine_capacity (PositiveIntegerField): Engine displacement in cc
         battery_capacity (FloatField): Battery capacity in kWh for electric/hybrid
         horsepower (PositiveIntegerField): Engine power output in hp
@@ -311,21 +142,14 @@ class Engine(models.Model):
 
     @property
     def engine(self):
-        """
-        Generates a string representation of the engine configuration.
-
-        Returns:
-            str: Formatted string describing the engine layout and cylinder count.
-                Examples:
-                    "V8", "Inline Engine", or "4-Cylinders"
-        """
+        """Generates a string representation of the engine configuration."""
         engine = ""
         if self.cylinder_layout and self.cylinder_count:
             engine += f"{self.cylinder_layout}{self.cylinder_count}"
         elif self.cylinder_layout:
             engine += f"{self.get_cylinder_layout_display()} Engine"
         elif self.cylinder_count:
-            engine += f"{self.cylinder_count}-Cylinders"
+            engine += f"{self.cylinder_count}-Cylinder"
         return engine
 
 
@@ -335,7 +159,6 @@ class TagCategory(models.Model):
 
     Attributes:
         name (str): Name of the tag category
-        allowed_values (list): List of permitted values for this category
     """
 
     # Category choices and their associated value choices
@@ -395,17 +218,16 @@ class Tag(models.Model):
     cars = models.ManyToManyField(Car)
 
     def clean(self):
-        """
-        Validates that the tag value is allowed for its category.
-
-        Raises:
-            ValidationError: If the tag value is not in the category's allowed values
-        """
+        """Validates that the tag value is allowed for its category."""
         allowed_values = self.category.get_allowed_values()
         if allowed_values and self.value not in allowed_values:
             raise ValidationError(
                 f"Invalid value '{self.value}' for category '{self.category.name}'"
             )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         unique_together = ["value", "category"]

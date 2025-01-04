@@ -15,7 +15,7 @@ class Brand(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
 
-class Fuel_Type(models.Model):
+class FuelType(models.Model):
     """
     Represents different types of fuel that can power a vehicle.
 
@@ -93,7 +93,7 @@ class Car(models.Model):
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField()
     brand = models.ForeignKey(Brand, on_delete=models.PROTECT)
-    fuel_type = models.ManyToManyField(Fuel_Type)
+    fuel_type = models.ManyToManyField(FuelType)
     performance = models.OneToOneField(Performance, on_delete=models.PROTECT, null=True)
     seats = models.CharField(max_length=10)
     year = models.IntegerField(default=2024)
@@ -218,7 +218,7 @@ class Car(models.Model):
         # Create brand tag
         self._create_tag(categories["brand"], self.brand.name)
 
-        # Create fuel type tags
+        # Create fuel type tags - now safe to access M2M field
         for fuel in self.fuel_type.all():
             self._create_tag(categories["fuel_type"], fuel.get_fuel_type_display())
 

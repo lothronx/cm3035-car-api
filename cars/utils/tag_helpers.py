@@ -12,13 +12,13 @@ def create_car_tags(car):
 
     # Get or create all tag categories
     categories = {
-        "brand": None,
-        "fuel_type": None,
-        "engine": None,
-        "seats": None,
-        "price_range": None,
-        "displacement": None,
-        "performance_metrics": None,
+        "Brand": None,
+        "Fuel Type": None,
+        "Engine": None,
+        "Seats": None,
+        "Price Range": None,
+        "Displacement": None,
+        "Performance Metrics": None,
     }
 
     for name in categories.keys():
@@ -85,11 +85,11 @@ def _get_price_range(avg_price):
         str: Price range category (ECONOMY, MID_RANGE, PREMIUM, LUXURY, or ULTRA_LUXURY)
     """
     ranges = [
-        (30000, "ECONOMY"),
-        (60000, "MID_RANGE"),
-        (100000, "PREMIUM"),
-        (200000, "LUXURY"),
-        (float("inf"), "ULTRA_LUXURY"),
+        (30000, "Economy"),
+        (60000, "Mid-Range"),
+        (100000, "Premium"),
+        (200000, "Luxury"),
+        (float("inf"), "Ultra Luxury"),
     ]
     for limit, category in ranges:
         if avg_price <= limit:
@@ -107,12 +107,12 @@ def _get_displacement_category(capacity):
         str: Displacement category (SMALL, LOW_MID, MID, LARGE, VERY_LARGE, or EXTREME)
     """
     ranges = [
-        (1000, "SMALL"),
-        (1600, "LOW_MID"),
-        (2500, "MID"),
-        (4000, "LARGE"),
-        (6000, "VERY_LARGE"),
-        (float("inf"), "EXTREME"),
+        (1000, "Small"),
+        (1600, "Low-Mid"),
+        (2500, "Mid"),
+        (4000, "Large"),
+        (6000, "Very Large"),
+        (float("inf"), "Extreme"),
     ]
     for limit, category in ranges:
         if capacity <= limit:
@@ -131,14 +131,14 @@ def _create_performance_tags(car, category):
 
     # High Torque tag (check all engines)
     if any(engine.torque > 500 for engine in car.engine_set.all()):
-        _create_tag(car, category, "HIGH_TORQUE")
+        _create_tag(car, category, "High Torque")
 
     # Get performance metrics
     if car.performance is not None:
         # Fast Acceleration tag
         if car.performance.acceleration_min and car.performance.acceleration_min < 4.0:
-            _create_tag(car, category, "FAST_ACCELERATION")
+            _create_tag(car, category, "Fast Acceleration")
 
         # Top Speed tag
         if car.performance.top_speed > 250:
-            _create_tag(car, category, "TOP_SPEED")
+            _create_tag(car, category, "Top Speed")

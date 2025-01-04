@@ -156,36 +156,36 @@ class TagCategory(models.Model):
 
     # Category choices and their associated value choices
     CATEGORY_CHOICES = [
-        ("brand", "Brand"),
-        ("fuel_type", "Fuel Type"),
-        ("engine", "Engine"),
-        ("seats", "Seats"),
-        ("price_range", "Price Range"),
-        ("displacement", "Displacement"),
-        ("performance_metrics", "Performance Metrics"),
+        ("Brand", "Brand"),
+        ("Fuel Type", "Fuel Type"),
+        ("Engine", "Engine"),
+        ("Seats", "Seats"),
+        ("Price Range", "Price Range"),
+        ("Displacement", "Displacement"),
+        ("Performance Metrics", "Performance Metrics"),
     ]
 
     # Value choices for specific categories
     CATEGORY_VALUE_CHOICES = {
         "price_range": [
-            ("ECONOMY", "Economy (Under $30k)"),
-            ("MID_RANGE", "Mid-Range ($30k-$60k)"),
-            ("PREMIUM", "Premium ($60k-$100k)"),
-            ("LUXURY", "Luxury ($100k-$200k)"),
-            ("ULTRA_LUXURY", "Ultra Luxury ($200k+)"),
+            ("Economy", "Economy (Under $30k)"),
+            ("Mid-Range", "Mid-Range ($30k-$60k)"),
+            ("Premium", "Premium ($60k-$100k)"),
+            ("Luxury", "Luxury ($100k-$200k)"),
+            ("Ultra Luxury", "Ultra Luxury ($200k+)"),
         ],
         "displacement": [
-            ("SMALL", "Small (0 - 1.0L)"),
-            ("LOW_MID", "Low-Mid (1.0 - 1.6L)"),
-            ("MID", "Mid (1.6 - 2.5L)"),
-            ("LARGE", "Large (2.5 - 4.0L)"),
-            ("VERY_LARGE", "Very Large (4.0 - 6.0L)"),
-            ("EXTREME", "Extreme (6.0L+)"),
+            ("Small", "Small (0 - 1.0L)"),
+            ("Low-Mid", "Low-Mid (1.0 - 1.6L)"),
+            ("Mid", "Mid (1.6 - 2.5L)"),
+            ("Large", "Large (2.5 - 4.0L)"),
+            ("Very Large", "Very Large (4.0 - 6.0L)"),
+            ("Extreme", "Extreme (6.0L+)"),
         ],
         "performance_metrics": [
-            ("HIGH_TORQUE", "High Torque"),
-            ("FAST_ACCELERATION", "Fast Acceleration"),
-            ("TOP_SPEED", "Top Speed"),
+            ("High Torque", "High Torque"),
+            ("Fast Acceleration", "Fast Acceleration"),
+            ("Top Speed", "Top Speed"),
         ],
     }
 

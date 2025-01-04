@@ -8,7 +8,7 @@ def create_car_tags(car):
     Args:
         car: The car instance to create tags for
     """
-    from cars.models import Tag, TagCategory
+    from cars.models import TagCategory
 
     # Get or create all tag categories
     categories = {
@@ -127,7 +127,6 @@ def _create_performance_tags(car, category):
         car: The car instance to create tags for
         category (TagCategory): The performance metrics category
     """
-    from cars.models import Tag
 
     # High Torque tag (check all engines)
     if any(engine.torque > 500 for engine in car.engine_set.all()):

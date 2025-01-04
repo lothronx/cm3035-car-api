@@ -55,13 +55,15 @@ class Performance(models.Model):
         acceleration_max (float): Maximum time from 0 to 100 km/h in seconds
     """
 
-    top_speed = models.IntegerField(help_text="Top speed in km/h")
+    top_speed = models.IntegerField(null=True, help_text="Top speed in km/h")
     acceleration_min = models.FloatField(
         validators=[MinValueValidator(0.1), MaxValueValidator(30)],
+        null=True,
         help_text="Minimal acceleration time from 0 to 100 km/h in seconds",
     )
     acceleration_max = models.FloatField(
         validators=[MinValueValidator(0.1), MaxValueValidator(30)],
+        null=True,
         help_text="Maximal acceleration time from 0 to 100 km/h in seconds",
     )
 
@@ -303,8 +305,8 @@ class Engine(models.Model):
         null=True, help_text="Engine capacity in cc"
     )
     battery_capacity = models.FloatField(null=True, help_text="Battery capacity in kWh")
-    horsepower = models.PositiveIntegerField(help_text="Horsepower in hp")
-    torque = models.PositiveIntegerField(help_text="Torque in Nm")
+    horsepower = models.PositiveIntegerField(null=True, help_text="Horsepower in hp")
+    torque = models.PositiveIntegerField(null=True, help_text="Torque in Nm")
     car = models.ForeignKey(Car, on_delete=models.CASCADE)
 
     @property

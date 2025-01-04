@@ -25,34 +25,34 @@ def create_car_tags(car):
         categories[name], _ = TagCategory.objects.get_or_create(name=name)
 
     # Create brand tag
-    _create_tag(car, categories["brand"], car.brand.name)
+    _create_tag(car, categories["Brand"], car.brand.name)
 
     # Create fuel type tags - now safe to access M2M field
     for fuel in car.fuel_type.all():
-        _create_tag(car, categories["fuel_type"], fuel.get_fuel_type_display())
+        _create_tag(car, categories["Fuel Type"], fuel.get_fuel_type_display())
 
     # Create engine tags
     for engine in car.engine_set.all():
         if engine.engine:
-            _create_tag(car, categories["engine"], engine.engine)
+            _create_tag(car, categories["Engine"], engine.engine)
 
     # Create seats tag
-    _create_tag(car, categories["seats"], f"{car.seats} seatings")
+    _create_tag(car, categories["Seats"], f"{car.seats} seatings")
 
     # Create price range tag
     if car.price_min and car.price_max:
         avg_price = (car.price_min + car.price_max) / 2
         price_range = _get_price_range(avg_price)
-        _create_tag(car, categories["price_range"], price_range)
+        _create_tag(car, categories["Price Range"], price_range)
 
     # Create displacement tags
     for engine in car.engine_set.all():
         if engine.engine_capacity:
             displacement = _get_displacement_category(engine.engine_capacity)
-            _create_tag(car, categories["displacement"], displacement)
+            _create_tag(car, categories["Displacement"], displacement)
 
     # Create performance tags
-    _create_performance_tags(car, categories["performance_metrics"])
+    _create_performance_tags(car, categories["Performance Metrics"])
 
 
 def _create_tag(car, category, value):

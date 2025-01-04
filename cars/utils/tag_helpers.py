@@ -1,7 +1,5 @@
 """Helper functions for tag-related operations in the Car model."""
 
-from cars.models import Tag, TagCategory
-
 
 def create_car_tags(car):
     """
@@ -10,6 +8,8 @@ def create_car_tags(car):
     Args:
         car: The car instance to create tags for
     """
+    from cars.models import Tag, TagCategory
+
     # Get or create all tag categories
     categories = {
         "brand": None,
@@ -66,6 +66,8 @@ def _create_tag(car, category, value):
     Returns:
         Tag: The created or existing tag object
     """
+    from cars.models import Tag
+
     tag, _ = Tag.objects.get_or_create(category=category, value=value)
     tag.cars.add(car)
     return tag
@@ -124,6 +126,8 @@ def _create_performance_tags(car, category):
         car: The car instance to create tags for
         category (TagCategory): The performance metrics category
     """
+    from cars.models import Tag
+
     # High Torque tag (check all engines)
     if any(engine.torque > 500 for engine in car.engine_set.all()):
         _create_tag(car, category, "HIGH_TORQUE")

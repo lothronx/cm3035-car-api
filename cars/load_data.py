@@ -81,7 +81,7 @@ def create_engines(car: Car, engine_data: Dict[str, Any]) -> None:
 
 
 @transaction.atomic
-def load_and_store(csv_file_path: str) -> None:
+def load_data(csv_file_path: str) -> None:
     """Load car data from CSV and store in database.
 
     Args:
@@ -98,13 +98,16 @@ def load_and_store(csv_file_path: str) -> None:
 
             # Clean and prepare performance data
             performance_data = {
-                "top_speed": clean_top_speed(row["Top Speed"]),
+                "top_speed": clean_top_speed(row["Total Speed"]),
                 "acceleration": clean_acceleration(row["Performance(0 - 100 )KM/H"]),
             }
             performance = create_performance(performance_data)
 
             # Clean and prepare price data
-            price_min, price_max = clean_price(row["Price"])
+            price_min, price_max = clean_price(row["Cars Prices"])
+
+            # Add fuel types
+            fuel_types = create_fuel_types(clean_fuel_type(row["Fuel Types"]))
 
             # Create car
             car = Car.objects.create(
@@ -116,26 +119,14 @@ def load_and_store(csv_file_path: str) -> None:
                 price_min=price_min,
                 price_max=price_max,
             )
-
-            # Add fuel types
-            fuel_types = create_fuel_types(clean_fuel_type(row["Fuel Types"]))
             car.fuel_type.set(fuel_types)
 
             # Clean and prepare engine data
             engine_data = {
-                "configs": parse_engine(row["Engine"]),
-                "engine_capacities": clean_capacity(row["Capacity"])[0],
-                "battery_capacities": clean_capacity(row["Capacity"])[1],
-                "horsepowers": clean_power_values(row["Horsepower"]),
-                "torques": clean_power_values(row["Torque"]),
+                "configs": parse_engine(row["Engines"]),
+                "engine_capacities": clean_capacity(row["CC/Battery Capacity"])[0],
+                "battery_capacities": clean_capacity(row["CC/Battery Capacity"])[1],
+                "horsepowers": clean_power_values(row["HorsePower"]),
+                "torques": row["Torque"],
             }
             create_engines(car, engine_data)
-
-
-if __name__ == "__main__":
-    csv_file_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
-        "data/The Ultimate Cars Dataset 2024.csv",
-    )
-    load_and_store(csv_file_path)
-    print("Data loading completed successfully!")

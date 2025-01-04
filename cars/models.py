@@ -1,3 +1,7 @@
+"""
+Data models for the cars app.
+"""
+
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
@@ -309,7 +313,9 @@ class Engine(models.Model):
         Generates a string representation of the engine configuration.
 
         Returns:
-            str: Formatted string describing the engine layout and cylinder count, e.g., "V8", "Inline Engine", or "4-Cylinders"
+            str: Formatted string describing the engine layout and cylinder count.
+                Examples:
+                    "V8", "Inline Engine", or "4-Cylinders"
         """
         engine = ""
         if self.cylinder_layout and self.cylinder_count:

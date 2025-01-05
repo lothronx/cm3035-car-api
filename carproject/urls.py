@@ -23,5 +23,6 @@ admin.site.site_title = "The Ultimate Cars Admin Portal"
 admin.site.index_title = "Welcome to The Ultimate Cars Admin"
 
 urlpatterns = [
+    path("", include("cars.urls")),
     path("admin/", admin.site.urls),
 ] + debug_toolbar_urls()

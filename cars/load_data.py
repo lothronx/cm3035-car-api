@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional, List, Set
 from django.db import transaction
 from django.utils.text import slugify
 
+from cars.utils.tag_helpers import create_car_tags
 from cars.utils.data_cleaners import (
     get_value_at_index,
     clean_car_data,
@@ -123,6 +124,9 @@ def _create_car(data: CarData) -> Optional[Car]:
         car.fuel_type.set(fuel_types)
 
         _create_engines(car, data.engine_data)
+
+        create_car_tags(car)
+
         return car
     except Exception as e:
         raise Exception(f'Failed to create car "{data.name}": {str(e)}') from e

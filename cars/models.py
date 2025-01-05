@@ -4,7 +4,7 @@ Data models for the cars app.
 
 from django.db import models
 from django.core.exceptions import ValidationError
-from cars.utils.tag_helpers import create_car_tags
+
 
 
 # Create your models here.
@@ -70,13 +70,16 @@ class Performance(models.Model):
         help_text="Unit: seconds",
     )
 
-    def __str__(self):
-        acc = (
+    @property
+    def acceleration(self):
+        return (
             self.acceleration_min
             if self.acceleration_min == self.acceleration_max
             else f"{self.acceleration_min}-{self.acceleration_max}"
         )
-        return f"Top Speed: {self.top_speed} km/h, Acceleration: {acc} seconds"
+
+    def __str__(self):
+        return f"Top Speed: {self.top_speed} km/h, Acceleration: {self.acceleration} seconds"
 
 
 class Car(models.Model):
@@ -105,10 +108,13 @@ class Car(models.Model):
     price_min = models.IntegerField(null=True)
     price_max = models.IntegerField(null=True)
 
-    def save(self, *args, **kwargs):
-        """Overrides the default save method to create associated tags."""
-        super().save(*args, **kwargs)
-        create_car_tags(self)
+    @property
+    def price(self):
+        return (
+            f"${self.price_min}"
+            if self.price_min == self.price_max
+            else f"${self.price_min}-{self.price_max}"
+        )
 
     def __str__(self):
         return f"{self.brand.name} {self.name}"
@@ -189,7 +195,8 @@ class Engine(models.Model):
         return ", ".join(parts) if parts else "No engine data available"
 
     class Meta:
-        ordering = ["cylinder_layout", "cylinder_count", "aspiration"]
+        ordering = ["-cylinder_layout", "-cylinder_count", "-aspiration"]
+
 
 class TagCategory(models.Model):
     """
@@ -277,5 +284,5 @@ class Tag(models.Model):
         return f"{self.category.name}: {self.value}"
 
     class Meta:
-        unique_together = ["value", "category"]
+        unique_together = ["category", "value"]
         ordering = ["category", "value"]

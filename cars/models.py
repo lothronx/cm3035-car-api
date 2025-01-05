@@ -18,6 +18,12 @@ class Brand(models.Model):
 
     name = models.CharField(max_length=100, unique=True)
 
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        ordering = ["name"]
+
 
 class FuelType(models.Model):
     """
@@ -36,6 +42,12 @@ class FuelType(models.Model):
         ("X", "Hybrid"),
     )
     fuel_type = models.CharField(max_length=1, choices=FUEL_TYPES)
+
+    def __str__(self):
+        return dict(self.FUEL_TYPES)[self.fuel_type]
+
+    class Meta:
+        ordering = ["fuel_type"]
 
 
 class Performance(models.Model):
@@ -58,6 +70,14 @@ class Performance(models.Model):
         help_text="Unit: seconds",
     )
 
+    def __str__(self):
+        acc = (
+            self.acceleration_min
+            if self.acceleration_min == self.acceleration_max
+            else f"{self.acceleration_min}-{self.acceleration_max}"
+        )
+        return f"Top Speed: {self.top_speed} km/h, Acceleration: {acc} seconds"
+
 
 class Car(models.Model):
     """
@@ -75,7 +95,7 @@ class Car(models.Model):
         price_max (IntegerField): Maximum price of the car
     """
 
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
     slug = models.SlugField()
     brand = models.ForeignKey(Brand, on_delete=models.PROTECT)
     fuel_type = models.ManyToManyField(FuelType)
@@ -89,6 +109,13 @@ class Car(models.Model):
         """Overrides the default save method to create associated tags."""
         super().save(*args, **kwargs)
         create_car_tags(self)
+
+    def __str__(self):
+        return f"{self.brand.name} {self.name}"
+
+    class Meta:
+        unique_together = ["brand", "name"]
+        ordering = ["brand", "name"]
 
 
 class Engine(models.Model):
@@ -145,6 +172,24 @@ class Engine(models.Model):
             engine += f"{self.cylinder_count}-Cylinder"
         return engine
 
+    def __str__(self):
+        parts = []
+        if self.engine:
+            parts.append(self.engine)
+        if self.aspiration:
+            parts.append(self.get_aspiration_display())
+        if self.engine_capacity:
+            parts.append(f"Displacement: {self.engine_capacity} cc")
+        if self.battery_capacity:
+            parts.append(f"Battery Capacity: {self.battery_capacity} kWh")
+        if self.horsepower:
+            parts.append(f"Horsepower: {self.horsepower} hp")
+        if self.torque:
+            parts.append(f"Torque: {self.torque} Nm")
+        return ", ".join(parts) if parts else "No engine data available"
+
+    class Meta:
+        ordering = ["cylinder_layout", "cylinder_count", "aspiration"]
 
 class TagCategory(models.Model):
     """
@@ -195,6 +240,12 @@ class TagCategory(models.Model):
         """Get the allowed values for this category"""
         return dict(self.CATEGORY_VALUE_CHOICES.get(self.name, []))
 
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        ordering = ["name"]
+
 
 class Tag(models.Model):
     """
@@ -222,5 +273,9 @@ class Tag(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
+    def __str__(self):
+        return f"{self.category.name}: {self.value}"
+
     class Meta:
         unique_together = ["value", "category"]
+        ordering = ["category", "value"]

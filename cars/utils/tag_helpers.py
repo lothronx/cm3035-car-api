@@ -129,7 +129,7 @@ def _create_performance_tags(car, category):
     """
 
     # High Torque tag (check all engines)
-    if any(engine.torque > 500 for engine in car.engine_set.all()):
+    if any((engine.torque and engine.torque > 500) for engine in car.engine_set.all()):
         _create_tag(car, category, "High Torque")
 
     # Get performance metrics

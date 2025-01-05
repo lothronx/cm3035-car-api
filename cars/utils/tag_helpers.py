@@ -4,11 +4,12 @@
 def create_car_tags(car):
     """
     Creates and associates all relevant tags for a car instance.
+    Removes old tags before creating new ones to ensure tag consistency.
 
     Args:
         car: The car instance to create tags for
     """
-    from cars.models import TagCategory
+    from cars.models import TagCategory, Tag
 
     # Get or create all tag categories
     categories = {
@@ -23,6 +24,8 @@ def create_car_tags(car):
 
     for name in categories.keys():
         categories[name], _ = TagCategory.objects.get_or_create(name=name)
+        # Remove all existing tags for this category and car
+        Tag.objects.filter(category=categories[name], cars=car).delete()
 
     # Create brand tag
     _create_tag(car, categories["Brand"], car.brand.name)

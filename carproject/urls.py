@@ -18,6 +18,10 @@ from django.contrib import admin
 from django.urls import include, path
 from debug_toolbar.toolbar import debug_toolbar_urls
 
+admin.site.site_header = "The Ultimate Cars Admin"
+admin.site.site_title = "The Ultimate Cars Admin Portal"
+admin.site.index_title = "Welcome to The Ultimate Cars Admin"
+
 urlpatterns = [
     path("admin/", admin.site.urls),
 ] + debug_toolbar_urls()

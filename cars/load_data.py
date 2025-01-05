@@ -113,7 +113,7 @@ def _create_car(data: CarData) -> Optional[Car]:
 
         car = Car.objects.create(
             name=data.name,
-            slug=slugify(data.name),
+            slug=slugify(f"{data.brand_name} {data.name}"),
             brand=brand,
             performance=performance,
             seats=data.seats,
@@ -143,14 +143,14 @@ def load_data(csv_file_path: str) -> None:
         processed_cars: Set[str] = set()
 
         for row in reader:
-            car_name = row["Cars Names"].strip()
+            car_identifier = f"{row['Company Names'].strip().lower()} {row['Cars Names'].strip().lower()}"
 
-            if car_name in processed_cars:  # to avoid duplicates
+            if car_identifier in processed_cars:  # to avoid duplicates
                 continue
 
             try:
                 car_data = clean_car_data(row)
                 _create_car(car_data)
-                processed_cars.add(car_name)
+                processed_cars.add(car_identifier)
             except Exception as e:
                 raise Exception(f"Failed to process car data: {str(e)}") from e

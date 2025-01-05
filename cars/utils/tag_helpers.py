@@ -27,7 +27,7 @@ def create_car_tags(car):
     # Create brand tag
     _create_tag(car, categories["Brand"], car.brand.name)
 
-    # Create fuel type tags - now safe to access M2M field
+    # Create fuel type tags
     for fuel in car.fuel_type.all():
         _create_tag(car, categories["Fuel Type"], fuel.get_fuel_type_display())
 

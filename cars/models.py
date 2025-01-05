@@ -294,6 +294,7 @@ class Tag(models.Model):
 
     category = models.ForeignKey(TagCategory, on_delete=models.CASCADE)
     value = models.CharField(max_length=50)
+    slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
     cars = models.ManyToManyField(Car)
 
     def clean(self):

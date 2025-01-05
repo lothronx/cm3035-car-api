@@ -64,6 +64,11 @@ class EngineAdmin(admin.ModelAdmin):
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ("__str__", "car_count")
+    
+    def get_prepopulated_fields(self, request, obj=None):
+        if obj:
+            return {}
+        return {"slug": ("category__name", "value")}
 
     def car_count(self, obj):
         url = reverse("admin:cars_car_changelist") + f"?{urlencode({'tag': obj.id})}"

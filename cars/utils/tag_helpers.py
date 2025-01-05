@@ -1,5 +1,5 @@
 """Helper functions for tag-related operations in the Car model."""
-
+from django.utils.text import slugify
 
 def create_car_tags(car):
     """
@@ -73,6 +73,9 @@ def _create_tag(car, category, value):
     from cars.models import Tag
 
     tag, _ = Tag.objects.get_or_create(category=category, value=value)
+    tag.slug = slugify(f"{category.name}-{value}")
+    tag.save()
+
     tag.cars.add(car)
     return tag
 

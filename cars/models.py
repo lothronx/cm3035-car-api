@@ -99,7 +99,7 @@ class Car(models.Model):
     """
 
     name = models.CharField(max_length=100)
-    slug = models.SlugField()
+    slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
     brand = models.ForeignKey(Brand, on_delete=models.PROTECT)
     fuel_type = models.ManyToManyField(FuelType)
     performance = models.OneToOneField(Performance, on_delete=models.PROTECT, null=True)

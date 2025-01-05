@@ -1,14 +1,24 @@
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html, urlencode
 from cars.utils.admin_filters import TagFilter
 from cars.utils.tag_helpers import create_car_tags
-from .models import *
+from .models import (
+    Brand,
+    Car,
+    Performance,
+    FuelType,
+    Engine,
+    TagCategory,
+    Tag,
+)
 
 
 # Register your models here.
 admin.site.register(Brand)
 admin.site.register(FuelType)
 admin.site.register(TagCategory)
-admin.site.register(Tag)
+
 
 class EngineInline(admin.TabularInline):
     model = Engine
@@ -49,3 +59,12 @@ class EngineAdmin(admin.ModelAdmin):
         "horsepower",
         "torque",
     )
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "car_count")
+
+    def car_count(self, obj):
+        url = reverse("admin:cars_car_changelist") + f"?{urlencode({'tag': obj.id})}"
+        return format_html('<a href="{}">{}</a>', url, obj.cars.count())

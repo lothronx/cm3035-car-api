@@ -1,4 +1,2 @@
 **/__pycache__/
-.vscode/
-.pylintrc
-mypy.ini
+db.sqlite3

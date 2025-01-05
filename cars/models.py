@@ -60,13 +60,13 @@ class Performance(models.Model):
         acceleration_max (float): Maximum time from 0 to 100 km/h in seconds
     """
 
-    top_speed = models.IntegerField(null=True, help_text="Unit: km/h")
+    top_speed = models.IntegerField(null=True, blank=True, help_text="Unit: km/h")
     acceleration_min = models.FloatField(
-        null=True,
+        null=True, blank=True,
         help_text="Unit: seconds",
     )
     acceleration_max = models.FloatField(
-        null=True,
+        null=True, blank=True,
         help_text="Unit: seconds",
     )
 
@@ -102,11 +102,11 @@ class Car(models.Model):
     slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
     brand = models.ForeignKey(Brand, on_delete=models.PROTECT)
     fuel_type = models.ManyToManyField(FuelType)
-    performance = models.OneToOneField(Performance, on_delete=models.PROTECT, null=True)
+    performance = models.OneToOneField(Performance, on_delete=models.PROTECT, null=True, blank=True)
     seats = models.CharField(max_length=10)
     year = models.IntegerField(default=2024)
-    price_min = models.IntegerField(null=True)
-    price_max = models.IntegerField(null=True)
+    price_min = models.IntegerField(null=True, blank=True)
+    price_max = models.IntegerField(null=True, blank=True)
 
     @property
     def price(self):
@@ -156,14 +156,14 @@ class Engine(models.Model):
     )
 
     cylinder_layout = models.CharField(
-        max_length=1, choices=CYLINDER_LAYOUTS, null=True
+        max_length=1, choices=CYLINDER_LAYOUTS, null=True, blank=True
     )
-    cylinder_count = models.PositiveSmallIntegerField(null=True)
-    aspiration = models.CharField(max_length=1, choices=ASPIRATION_TYPES, null=True)
-    engine_capacity = models.PositiveIntegerField(null=True, help_text="Unit: cc")
-    battery_capacity = models.FloatField(null=True, help_text="Unit: kWh")
-    horsepower = models.PositiveIntegerField(null=True, help_text="Unit: hp")
-    torque = models.PositiveIntegerField(null=True, help_text="Unit: Nm")
+    cylinder_count = models.PositiveSmallIntegerField(null=True, blank=True)
+    aspiration = models.CharField(max_length=1, choices=ASPIRATION_TYPES, null=True, blank=True)
+    engine_capacity = models.PositiveIntegerField(null=True, blank=True, help_text="Unit: cc")
+    battery_capacity = models.FloatField(null=True, blank=True, help_text="Unit: kWh")
+    horsepower = models.PositiveIntegerField(null=True, blank=True, help_text="Unit: hp")
+    torque = models.PositiveIntegerField(null=True, blank=True, help_text="Unit: Nm")
     car = models.ForeignKey(Car, on_delete=models.CASCADE)
 
     @property

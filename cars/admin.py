@@ -22,7 +22,7 @@ admin.site.register(TagCategory)
 
 class EngineInline(admin.TabularInline):
     model = Engine
-    extra = 1
+    extra = 0
 
 
 @admin.register(Car)

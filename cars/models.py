@@ -2,9 +2,9 @@
 Data models for the cars app.
 """
 
-from django.db import models
 from django.core.exceptions import ValidationError
-
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db import models
 
 
 # Create your models here.
@@ -60,14 +60,23 @@ class Performance(models.Model):
         acceleration_max (float): Maximum time from 0 to 100 km/h in seconds
     """
 
-    top_speed = models.IntegerField(null=True, blank=True, help_text="Unit: km/h")
+    top_speed = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Unit: km/h",
+        validators=[MinValueValidator(0), MaxValueValidator(1000)],
+    )
     acceleration_min = models.FloatField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="Unit: seconds",
+        validators=[MinValueValidator(0.0), MaxValueValidator(30.0)],
     )
     acceleration_max = models.FloatField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="Unit: seconds",
+        validators=[MinValueValidator(0.0), MaxValueValidator(30.0)],
     )
 
     @property
@@ -102,11 +111,19 @@ class Car(models.Model):
     slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
     brand = models.ForeignKey(Brand, on_delete=models.PROTECT)
     fuel_type = models.ManyToManyField(FuelType)
-    performance = models.OneToOneField(Performance, on_delete=models.PROTECT, null=True, blank=True)
+    performance = models.OneToOneField(
+        Performance, on_delete=models.PROTECT, null=True, blank=True
+    )
     seats = models.CharField(max_length=10)
-    year = models.IntegerField(default=2024)
-    price_min = models.IntegerField(null=True, blank=True)
-    price_max = models.IntegerField(null=True, blank=True)
+    year = models.IntegerField(
+        default=2024, validators=[MinValueValidator(1900), MaxValueValidator(2100)]
+    )
+    price_min = models.IntegerField(
+        null=True, blank=True, validators=[MinValueValidator(0)]
+    )
+    price_max = models.IntegerField(
+        null=True, blank=True, validators=[MinValueValidator(0)]
+    )
 
     @property
     def price(self):
@@ -159,10 +176,21 @@ class Engine(models.Model):
         max_length=1, choices=CYLINDER_LAYOUTS, null=True, blank=True
     )
     cylinder_count = models.PositiveSmallIntegerField(null=True, blank=True)
-    aspiration = models.CharField(max_length=1, choices=ASPIRATION_TYPES, null=True, blank=True)
-    engine_capacity = models.PositiveIntegerField(null=True, blank=True, help_text="Unit: cc")
-    battery_capacity = models.FloatField(null=True, blank=True, help_text="Unit: kWh")
-    horsepower = models.PositiveIntegerField(null=True, blank=True, help_text="Unit: hp")
+    aspiration = models.CharField(
+        max_length=1, choices=ASPIRATION_TYPES, null=True, blank=True
+    )
+    engine_capacity = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Unit: cc"
+    )
+    battery_capacity = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Unit: kWh",
+        validators=[MinValueValidator(0.0)],
+    )
+    horsepower = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Unit: hp"
+    )
     torque = models.PositiveIntegerField(null=True, blank=True, help_text="Unit: Nm")
     car = models.ForeignKey(Car, on_delete=models.CASCADE)
 

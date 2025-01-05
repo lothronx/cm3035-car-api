@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Prefetch
 from cars.models import TagCategory, Tag
 
 
@@ -9,15 +10,20 @@ class TagFilter(admin.SimpleListFilter):
     parameter_name = "tag"
 
     def lookups(self, request, model_admin):
-        # Get all unique tag categories and their values
-        categories = TagCategory.objects.all()
+        # Get all categories with their tags in a single query
+        categories = TagCategory.objects.prefetch_related(
+            Prefetch(
+                'tag_set',
+                queryset=Tag.objects.order_by('value')
+            )
+        ).order_by('name')
+        
         choices = []
         for category in categories:
             # Add category name as a header
             choices.append((f"__category__{category.name}", f"=={category.name}=="))
-            # Add all tags in this category
-            tags = Tag.objects.filter(category=category)
-            choices.extend([(str(tag.id), f"{tag.value}") for tag in tags])
+            # Add all tags in this category (already prefetched)
+            choices.extend([(str(tag.id), f"{tag.value}") for tag in category.tag_set.all()])
         return choices
 
     def queryset(self, request, queryset):

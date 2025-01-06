@@ -6,6 +6,7 @@ from . import api
 
 router = DefaultRouter()
 router.register("cars", api.CarViewSet, basename="car")
+router.register("brands", api.BrandViewSet, basename="brand")
 
 # Register nested routes for car engines
 car_engine_router = NestedDefaultRouter(router, r'cars', lookup='car', trailing_slash=True)

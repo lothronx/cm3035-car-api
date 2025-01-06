@@ -1,8 +1,9 @@
 from rest_framework.filters import SearchFilter
-from rest_framework.viewsets import ModelViewSet
-
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.response import Response
 from .models import *
 from .serializers import *
+from .services.brand_statistics import get_brand_statistics
 
 
 class CarViewSet(ModelViewSet):
@@ -62,3 +63,13 @@ class CarEngineViewSet(ModelViewSet):
         response.status_code = 303
         response["Location"] = request.path
         return response
+
+
+class BrandViewSet(ReadOnlyModelViewSet):
+    queryset = Brand.objects.all()
+    serializer_class = BrandSerializer
+    lookup_field = "slug"
+
+    def retrieve(self, request, *args, **kwargs):
+        brand = self.get_object()
+        return Response(get_brand_statistics(brand))

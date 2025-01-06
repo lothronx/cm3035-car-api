@@ -72,23 +72,7 @@ def clean_car_data(row: Dict[str, str]) -> CarData:
     )
 
 
-def get_value_at_index(lst: Optional[list], index: int) -> Any:
-    """Get value at index, with special handling for empty lists and out of range indices.
 
-    Args:
-        lst: List of values or None
-        index: Desired index
-
-    Returns:
-        Value at index, first value if index is 1 and out of range,
-        last value for other out of range indices, or None if list is empty or None
-    """
-    if not lst:
-        return None
-    try:
-        return lst[index]
-    except IndexError:
-        return lst[0] if index == 1 else lst[-1]
 
 
 def _parse_number_with_commas(value_str: str) -> int:

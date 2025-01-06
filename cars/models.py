@@ -200,14 +200,16 @@ class Engine(models.Model):
             engine += f"{self.get_cylinder_layout_display()} Engine"
         elif self.cylinder_count:
             engine += f"{self.cylinder_count}-Cylinder"
+
+        if self.aspiration:
+            engine += f" {self.get_aspiration_display()}"
+
         return engine
 
     def __str__(self):
         parts = []
         if self.engine:
             parts.append(self.engine)
-        if self.aspiration:
-            parts.append(self.get_aspiration_display())
         if self.engine_capacity:
             parts.append(f"Displacement: {self.engine_capacity} cc")
         if self.battery_capacity:

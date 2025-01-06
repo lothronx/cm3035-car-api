@@ -1,9 +1,12 @@
 from rest_framework.filters import SearchFilter
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.response import Response
+from rest_framework.decorators import action
+
 from .models import *
 from .serializers import *
 from .services.brand_statistics import get_brand_statistics
+from .services.car_recommendations import get_similar_cars
 
 
 class CarViewSet(ModelViewSet):
@@ -45,6 +48,15 @@ class CarViewSet(ModelViewSet):
         response.status_code = 303
         response["Location"] = request.path
         return response
+
+    @action(detail=True, methods=["get"])
+    def recommendation(self, request, slug=None):
+        car = self.get_object()
+        similar_cars = get_similar_cars(car)
+        serializer = CarListSerializer(
+            similar_cars, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
 
 
 class CarEngineViewSet(ModelViewSet):

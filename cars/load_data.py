@@ -15,6 +15,7 @@ from cars.utils.data_cleaners import (
     clean_car_data,
     CarData,
 )
+from cars.utils.car_helpers import create_or_update_car
 from .models import (
     Car,
     Brand,
@@ -109,25 +110,21 @@ def _create_car(data: CarData) -> Optional[Car]:
         Created Car object or None if creation failed
     """
     try:
-        performance = _create_performance(data.performance_data)
-        brand = Brand.objects.get_or_create(name=data.brand_name)[0]
-        fuel_types = _create_fuel_types(data.fuel_codes)
-
-        car = Car.objects.create(
-            name=data.name,
-            brand=brand,
-            performance=performance,
-            seats=data.seats,
-            price_min=data.price_data[0],
-            price_max=data.price_data[1],
-        )
-        car.fuel_type.set(fuel_types)
-
+        car_data = {
+            "name": data.name,
+            "brand": data.brand_name,
+            "seats": data.seats,
+            "price_min": data.price_data[0],
+            "price_max": data.price_data[1],
+            "performance": data.performance_data,
+            "fuel_type": _create_fuel_types(data.fuel_codes),
+        }
+        
+        car = create_or_update_car(car_data)
         _create_engines(car, data.engine_data)
-
         create_car_tags(car)
-
         return car
+        
     except Exception as e:
         raise Exception(f'Failed to create car "{data.name}": {str(e)}') from e
 

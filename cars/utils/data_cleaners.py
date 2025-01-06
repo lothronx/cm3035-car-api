@@ -46,9 +46,11 @@ def clean_car_data(row: Dict[str, str]) -> CarData:
     Returns:
         CarData object containing cleaned data
     """
+    acceleration = _clean_acceleration(row["Performance(0 - 100 )KM/H"])
     performance_data = {
         "top_speed": _clean_top_speed(row["Total Speed"]),
-        "acceleration": _clean_acceleration(row["Performance(0 - 100 )KM/H"]),
+        "acceleration_min": acceleration[0],
+        "acceleration_max": acceleration[1],
     }
 
     engine_data = {

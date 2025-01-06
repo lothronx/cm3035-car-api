@@ -20,16 +20,24 @@ class PerformanceSerializer(serializers.ModelSerializer):
 
 class CarListSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(
-        view_name="cars:car-detail",
-        lookup_field="slug",
-        lookup_url_kwarg="slug"
+        view_name="cars:car-detail", lookup_field="slug", lookup_url_kwarg="slug"
     )
     brand = serializers.CharField(source="brand.name")
     tags = TagSerializer(source="tag_set", many=True)
+    price = serializers.SerializerMethodField()
 
     class Meta:
         model = Car
         fields = ["url", "name", "brand", "price", "tags"]
+
+    def get_price(self, obj):
+        if not (obj.price_min or obj.price_max):
+            return None
+        return (
+            f"${obj.price_min:,}"
+            if obj.price_min == obj.price_max
+            else f"${obj.price_min:,}-${obj.price_max:,}"
+        )
 
 
 class CarDetailSerializer(serializers.ModelSerializer):
@@ -37,7 +45,8 @@ class CarDetailSerializer(serializers.ModelSerializer):
     fuel_type = serializers.StringRelatedField(many=True)
     engines = serializers.StringRelatedField(source="engine_set", many=True)
     top_speed = serializers.SerializerMethodField()
-    acceleration = serializers.CharField(source="performance.acceleration")
+    acceleration = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
 
     class Meta:
         model = Car
@@ -61,6 +70,28 @@ class CarDetailSerializer(serializers.ModelSerializer):
             else None
         )
 
+    def get_acceleration(self, obj):
+        if not obj.performance or not (obj.performance.acceleration_min or obj.performance.acceleration_max):
+            return None
+        
+        acc_min = obj.performance.acceleration_min
+        acc_max = obj.performance.acceleration_max
+        
+        return (
+            f"{acc_min:.1f} seconds"
+            if acc_min == acc_max
+            else f"{acc_min:.1f}-{acc_max:.1f} seconds"
+        )
+
+    def get_price(self, obj):
+        if not (obj.price_min or obj.price_max):
+            return None
+        return (
+            f"${obj.price_min:,}"
+            if obj.price_min == obj.price_max
+            else f"${obj.price_min:,}-${obj.price_max:,}"
+        )
+
 
 class BrandField(serializers.CharField):
     def to_representation(self, value):
@@ -72,9 +103,7 @@ class BrandField(serializers.CharField):
 
 class CarFormSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(
-        view_name="cars:car-detail",
-        lookup_field="slug",
-        lookup_url_kwarg="slug"
+        view_name="cars:car-detail", lookup_field="slug", lookup_url_kwarg="slug"
     )
     brand = BrandField()
     fuel_type = serializers.PrimaryKeyRelatedField(

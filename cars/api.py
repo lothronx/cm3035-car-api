@@ -20,7 +20,7 @@ class CarViewSet(ModelViewSet):
 
     filter_backends = [SearchFilter]
     search_fields = ["name", "brand__name"]
-    lookup_field = 'slug'
+    lookup_field = "slug"
 
     def get_serializer_class(self):
         """Return appropriate serializer class based on the action."""
@@ -37,6 +37,14 @@ class CarViewSet(ModelViewSet):
             return f"{obj.brand.name} - {obj.name}"
         return super().get_view_name()
 
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        # After successful creation, return a 303 See Other response
+        # This will make the browser do a GET request to the list endpoint
+        response.status_code = 303
+        response["Location"] = request.path
+        return response
+
 
 class CarEngineViewSet(ModelViewSet):
     serializer_class = CarEngineSerializer
@@ -46,3 +54,11 @@ class CarEngineViewSet(ModelViewSet):
         car_slug = self.kwargs.get("car_slug")
         engines = Engine.objects.filter(car__slug=car_slug)
         return engines
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        # After successful creation, return a 303 See Other response
+        # This will make the browser do a GET request to the list endpoint
+        response.status_code = 303
+        response["Location"] = request.path
+        return response

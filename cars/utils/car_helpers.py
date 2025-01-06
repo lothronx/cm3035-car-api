@@ -6,7 +6,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from cars.models import Car, Brand, Performance, FuelType
-from cars.utils.tag_helpers import create_car_tags
+from cars.utils.tag_helpers import create_or_update_car_tags
 
 
 def get_or_create_brand(name: str) -> Brand:
@@ -74,10 +74,11 @@ def create_or_update_car(
                 car.performance = performance
                 car.save()
 
-        # Create tags for new cars
-        if not instance:
-            create_car_tags(car)
+        # Create tags
+        create_or_update_car_tags(car)
 
         return car
     except Exception as e:
-        raise Exception(f'Failed to {"update" if instance else "create"} car: {str(e)}') from e
+        raise Exception(
+            f'Failed to {"update" if instance else "create"} car: {str(e)}'
+        ) from e

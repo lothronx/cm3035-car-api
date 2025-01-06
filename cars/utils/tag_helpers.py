@@ -1,7 +1,7 @@
 """Helper functions for tag-related operations in the Car model."""
 
 
-def create_car_tags(car):
+def create_or_update_car_tags(car):
     """
     Creates and associates all relevant tags for a car instance.
     Removes old tags before creating new ones to ensure tag consistency.
@@ -136,15 +136,15 @@ def _create_performance_tags(car, category):
     """
 
     # High Torque tag (check all engines)
-    if any((engine.torque and engine.torque > 500) for engine in car.engine_set.all()):
+    if any((engine.torque is not None and engine.torque > 500) for engine in car.engine_set.all()):
         _create_tag(car, category, "High Torque")
 
     # Get performance metrics
     if car.performance is not None:
         # Fast Acceleration tag
-        if car.performance.acceleration_min and car.performance.acceleration_min < 4.0:
+        if car.performance.acceleration_min is not None and car.performance.acceleration_min < 4.0:
             _create_tag(car, category, "Fast Acceleration")
 
         # Top Speed tag
-        if car.performance.top_speed > 250:
+        if car.performance.top_speed is not None and car.performance.top_speed > 250:
             _create_tag(car, category, "Top Speed")

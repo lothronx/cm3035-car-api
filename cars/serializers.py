@@ -71,6 +71,11 @@ class BrandField(serializers.CharField):
 
 
 class CarFormSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name="cars:car-detail",
+        lookup_field="slug",
+        lookup_url_kwarg="slug"
+    )
     brand = BrandField()
     fuel_type = serializers.PrimaryKeyRelatedField(
         queryset=FuelType.objects.all(), many=True
@@ -80,6 +85,7 @@ class CarFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
         fields = [
+            "url",
             "id",
             "name",
             "brand",

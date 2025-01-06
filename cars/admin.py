@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html, urlencode
 from cars.utils.admin_filters import TagFilter
-from cars.utils.tag_helpers import create_car_tags
+from cars.utils.tag_helpers import create_or_update_car_tags
 from .models import (
     Brand,
     Car,
@@ -41,7 +41,7 @@ class CarAdmin(admin.ModelAdmin):
         """Called when saving a Car object in the admin panel."""
         super().save_model(request, obj, form, change)
         form.save_m2m()
-        create_car_tags(obj)
+        create_or_update_car_tags(obj)
 
 
 @admin.register(Performance)
@@ -64,7 +64,7 @@ class EngineAdmin(admin.ModelAdmin):
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ("__str__", "car_count")
-    
+
     def get_prepopulated_fields(self, request, obj=None):
         if obj:
             return {}

@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List, Set
 
 from django.db import transaction
 
-from cars.utils.tag_helpers import create_car_tags
+from cars.utils.tag_helpers import create_or_update_car_tags
 from cars.utils.data_cleaners import (
     get_value_at_index,
     clean_car_data,
@@ -119,12 +119,12 @@ def _create_car(data: CarData) -> Optional[Car]:
             "performance": data.performance_data,
             "fuel_type": _create_fuel_types(data.fuel_codes),
         }
-        
+
         car = create_or_update_car(car_data)
         _create_engines(car, data.engine_data)
-        create_car_tags(car)
+        create_or_update_car_tags(car)
         return car
-        
+
     except Exception as e:
         raise Exception(f'Failed to create car "{data.name}": {str(e)}') from e
 

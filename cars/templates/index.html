@@ -5,6 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car Project</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css">
+    <style>
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        @media (max-width: 767px) {
+            .markdown-body {
+                padding: 15px;
+            }
+        }
+        .endpoint {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        .endpoint:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -16,10 +38,13 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'schema-swagger-ui' %}">API Documentation</a>
+                        <a class="nav-link" href="{% url 'schema-swagger-ui' %}">Swagger UI</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'schema-redoc' %}">ReDoc</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/">Admin</a>
                     </li>
                 </ul>
             </div>
@@ -27,16 +52,191 @@
     </nav>
 
     <div class="container mt-4">
-        <div class="jumbotron">
-            <h1 class="display-4">Welcome to Car Project</h1>
-            <p class="lead">A comprehensive API for managing cars, engines, and brands.</p>
-            <hr class="my-4">
-            <p>Explore our API documentation to learn more about available endpoints and features.</p>
-            <div class="d-grid gap-2 d-md-block">
+        <div class="alert alert-info" role="alert">
+            <h4 class="alert-heading">Project Information</h4>
+            <p class="mb-0">
+                <strong>Admin Credentials:</strong><br>
+                Username: admin<br>
+                Password: cm3035midterm
+            </p>
+        </div>
+
+        <article class="markdown-body">
+            <h1>Car Project API Documentation</h1>
+
+            <p>This document provides an overview of the RESTful API endpoints available in the Car Project. 
+            The API is designed to manage cars, their engines, brands, and provide recommendations.</p>
+
+            <h2>API Endpoints Overview</h2>
+
+            <h3>Cars Management</h3>
+
+            <h4>1. List and Create Cars (<code>/api/cars/</code>)</h4>
+            <ul>
+                <li><strong>Example</strong>: <a href="/api/cars/" class="endpoint">/api/cars/</a></li>
+                <li><strong>Methods</strong>:
+                    <ul>
+                        <li><strong>GET</strong>: Retrieve a paginated list of all cars with basic information including name, brand, price, tags, and url to the car's detail page</li>
+                        <li><strong>POST</strong>: Add a new car to the database with all required details, including name, brand, year, fuel types, etc.</li>
+                    </ul>
+                </li>
+                <li><strong>Highlights</strong>:
+                    <ul>
+                        <li>Search functionality by car name or brand</li>
+                        <li>Pagination support</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h4>2. Individual Car Operations (<code>/api/cars/{slug}/</code>)</h4>
+            <ul>
+                <li><strong>Example</strong>: <a href="/api/cars/audi-a4-2024/" class="endpoint">/api/cars/audi-a4-2024/</a></li>
+                <li><strong>Methods</strong>:
+                    <ul>
+                        <li><strong>GET</strong>: Get detailed information about a specific car including its engines and performance data</li>
+                        <li><strong>PUT/PATCH</strong>: Update car information</li>
+                        <li><strong>DELETE</strong>: Remove a car from the database</li>
+                    </ul>
+                </li>
+                <li><strong>Highlights</strong>:
+                    <ul>
+                        <li>Uses slug-based URLs for better SEO and readability</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>Engine Management</h3>
+
+            <h4>3. Car Engines (<code>/api/cars/{car_slug}/engines/</code>)</h4>
+            <ul>
+                <li><strong>Example</strong>: <a href="/api/cars/audi-a4-2024/engines/" class="endpoint">/api/cars/audi-a4-2024/engines/</a></li>
+                <li><strong>Methods</strong>:
+                    <ul>
+                        <li><strong>GET</strong>: List all engines associated with a specific car, including cylinder layout, cylinder count, aspiration, etc.</li>
+                        <li><strong>POST</strong>: Add a new engine to a car</li>
+                    </ul>
+                </li>
+                <li><strong>Highlights</strong>:
+                    <ul>
+                        <li>Engine specifications (power, torque, displacement)</li>
+                        <li>Support for multiple engines per car</li>
+                        <li>Ordered by engine ID for consistency</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h4>4. Individual Engine Operations (<code>/api/cars/{car_slug}/engines/{engine_id}/</code>)</h4>
+            <ul>
+                <li><strong>Example</strong>: <a href="/api/cars/audi-a4-2024/engines/139/" class="endpoint">/api/cars/audi-a4-2024/engines/139/</a></li>
+                <li><strong>Methods</strong>:
+                    <ul>
+                        <li><strong>GET</strong>: Get detailed information about a specific engine</li>
+                        <li><strong>PUT/PATCH</strong>: Update engine information</li>
+                        <li><strong>DELETE</strong>: Remove an engine from a car</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>Recommendation System</h3>
+
+            <h4>5. Car Recommendations (<code>/api/cars/{slug}/recommendation/</code>)</h4>
+            <ul>
+                <li><strong>Example</strong>: <a href="/api/cars/audi-a4-2024/recommendation/" class="endpoint">/api/cars/audi-a4-2024/recommendation/</a></li>
+                <li><strong>Methods</strong>:
+                    <ul>
+                        <li><strong>GET</strong>: Receive 5 personalized car recommendations based on:
+                            <ul>
+                                <li>Similar performance characteristics</li>
+                                <li>Matching price range</li>
+                                <li>Common brand</li>
+                                <li>Shared tags</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li><strong>Highlights</strong>:
+                    <ul>
+                        <li>Help users discover similar cars based on their interests</li>
+                        <li>Extensive use of aggregations and annotations</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>Brand Management</h3>
+
+            <h4>6. Brand Details (<code>/api/brands/{slug}/</code>)</h4>
+            <ul>
+                <li><strong>Example</strong>: <a href="/api/brands/audi/" class="endpoint">/api/brands/audi/</a></li>
+                <li><strong>Methods</strong>:
+                    <ul>
+                        <li><strong>GET</strong>: Access comprehensive brand information including:
+                            <ul>
+                                <li>Total number of cars of the brand in the database</li>
+                                <li>Average price, top speed, and acceleration of all cars of the brand</li>
+                                <li>Popular engines used by the brand</li>
+                                <li>Popular tags associated with the brand</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li><strong>Highlights</strong>:
+                    <ul>
+                        <li>Detailed brand statistics</li>
+                        <li>The complexity of queries used</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h2>Dependencies</h2>
+
+            <ul>
+                <li>Python version: 3.13.1</li>
+                <li>Django version: 5.1.4</li>
+            </ul>
+
+            <h3>Python Packages</h3>
+            <pre><code>asgiref==3.8.1
+astroid==3.3.8
+attrs==24.3.0
+dill==0.3.9
+Django==5.1.4
+django-debug-toolbar==4.4.6
+django-filter==24.3
+django-stubs==5.1.1
+django-stubs-ext==5.1.1
+djangorestframework==3.15.2
+drf-nested-routers==0.94.1
+drf-yasg==1.21.7
+factory_boy==3.0.1
+Faker==33.3.0
+hypothesis==6.123.2
+inflection==0.5.1
+isort==5.13.2
+mccabe==0.7.0
+packaging==24.2
+platformdirs==4.3.6
+pylint==3.3.3
+pylint-django==2.6.1
+pylint-plugin-utils==0.8.2
+python-dateutil==2.9.0.post0
+pytz==2024.2
+PyYAML==6.0.1
+setuptools==75.1.0
+six==1.17.0
+sortedcontainers==2.4.0
+sqlparse==0.5.3
+tomlkit==0.13.2
+types-PyYAML==6.0.12.20241230
+typing_extensions==4.12.2
+uritemplate==4.1.1
+wheel==0.44.0
+</code></pre>
+
+            <div class="d-grid gap-2 d-md-block mb-4">
                 <a class="btn btn-primary btn-lg me-2" href="{% url 'schema-swagger-ui' %}" role="button">View Swagger UI</a>
                 <a class="btn btn-success btn-lg" href="{% url 'schema-redoc' %}" role="button">View ReDoc</a>
             </div>
-        </div>
+        </article>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

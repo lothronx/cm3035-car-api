@@ -24,7 +24,7 @@ paths:
       tags:
         - Cars
       summary: List all cars
-      description: Returns a list of all cars with basic information
+      description: Returns a paginated list of all cars with basic information
       parameters:
         - name: search
           in: query
@@ -32,6 +32,20 @@ paths:
           required: false
           schema:
             type: string
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 10
       responses:
         '200':
           description: Successful operation
@@ -62,18 +76,18 @@ paths:
               description: URL of the car list
 
   /api/cars/{slug}/:
+    parameters:
+      - name: slug
+        in: path
+        description: Slug of the car
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Cars
       summary: Get car by slug
       description: Returns detailed information about a specific car
-      parameters:
-        - name: slug
-          in: path
-          description: Slug of the car
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -88,13 +102,6 @@ paths:
         - Cars
       summary: Update car
       description: Update an existing car's information
-      parameters:
-        - name: slug
-          in: path
-          description: Slug of the car
-          required: true
-          schema:
-            type: string
       requestBody:
         required: true
         content:
@@ -111,13 +118,6 @@ paths:
         - Cars
       summary: Delete car
       description: Delete an existing car
-      parameters:
-        - name: slug
-          in: path
-          description: Slug of the car
-          required: true
-          schema:
-            type: string
       responses:
         '204':
           description: Car deleted successfully
@@ -125,18 +125,26 @@ paths:
           description: Car not found
 
   /api/cars/{slug}/recommendation/:
+    parameters:
+      - name: slug
+        in: path
+        description: Slug of the car
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Cars
       summary: Get car recommendations
-      description: Returns similar cars based on the specified car's attributes
-      parameters:
-        - name: slug
-          in: path
-          description: Slug of the car
-          required: true
-          schema:
-            type: string
+      description: |
+        Returns similar cars based on:
+        - Similar performance characteristics
+        - Matching price range
+        - Common brand
+        - Shared tags
+        
+        This endpoint helps users discover similar cars based on their interests
+        through extensive use of aggregations and annotations.
       responses:
         '200':
           description: Successful operation
@@ -150,18 +158,18 @@ paths:
           description: Car not found
 
   /api/cars/{car_slug}/engines/:
+    parameters:
+      - name: car_slug
+        in: path
+        description: Slug of the car
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Engines
       summary: List car engines
-      description: Returns a list of engines for a specific car
-      parameters:
-        - name: car_slug
-          in: path
-          description: Slug of the car
-          required: true
-          schema:
-            type: string
+      description: Returns a list of engines for a specific car, ordered by ID
       responses:
         '200':
           description: Successful operation
@@ -178,13 +186,6 @@ paths:
         - Engines
       summary: Add engine to car
       description: Add a new engine to a specific car
-      parameters:
-        - name: car_slug
-          in: path
-          description: Slug of the car
-          required: true
-          schema:
-            type: string
       requestBody:
         required: true
         content:
@@ -192,40 +193,84 @@ paths:
             schema:
               $ref: '#/components/schemas/Engine'
       responses:
-        '201':
-          description: Engine added successfully
+        '303':
+          description: Engine added successfully, redirects to engines list
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the engines list
         '404':
           description: Car not found
 
-  /api/brands/:
+  /api/cars/{car_slug}/engines/{engine_id}/:
+    parameters:
+      - name: car_slug
+        in: path
+        description: Slug of the car
+        required: true
+        schema:
+          type: string
+      - name: engine_id
+        in: path
+        description: ID of the engine
+        required: true
+        schema:
+          type: integer
     get:
       tags:
-        - Brands
-      summary: List all brands
-      description: Returns a list of all car brands
+        - Engines
+      summary: Get engine by ID
+      description: Returns detailed information about a specific engine
       responses:
         '200':
           description: Successful operation
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Brand'
+                $ref: '#/components/schemas/Engine'
+        '404':
+          description: Engine or car not found
+    put:
+      tags:
+        - Engines
+      summary: Update engine
+      description: Update an existing engine's information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Engine'
+      responses:
+        '200':
+          description: Engine updated successfully
+        '404':
+          description: Engine or car not found
+    delete:
+      tags:
+        - Engines
+      summary: Delete engine
+      description: Delete an existing engine
+      responses:
+        '204':
+          description: Engine deleted successfully
+        '404':
+          description: Engine or car not found
 
   /api/brands/{slug}/:
+    parameters:
+      - name: slug
+        in: path
+        description: Slug of the brand
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Brands
       summary: Get brand by slug
       description: Returns detailed information about a specific brand including statistics
-      parameters:
-        - name: slug
-          in: path
-          description: Slug of the brand
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -241,56 +286,46 @@ components:
     CarList:
       type: object
       properties:
-        slug:
-          type: string
-          example: "tesla-model-3"
-        name:
-          type: string
-          example: "Tesla Model 3"
-        brand:
-          type: string
-          example: "Tesla"
-        image_url:
+        url:
           type: string
           format: uri
-          example: "https://example.com/images/tesla-model-3.jpg"
+        name:
+          type: string
+        brand:
+          type: string
+        price:
+          type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
 
     CarDetail:
       type: object
       properties:
-        slug:
-          type: string
-          example: "tesla-model-3"
         name:
           type: string
-          example: "Tesla Model 3"
         brand:
-          $ref: '#/components/schemas/Brand'
-        description:
           type: string
-          example: "All-electric sedan with impressive range"
+        year:
+          type: integer
+          minimum: 1900
+          maximum: 2100
+        price:
+          type: string
+        seats:
+          type: string
+          maxLength: 10
+        performance:
+          $ref: '#/components/schemas/Performance'
         engines:
           type: array
           items:
-            $ref: '#/components/schemas/Engine'
-        tags:
+            type: string
+        fuel_types:
           type: array
           items:
-            type: object
-            properties:
-              name:
-                type: string
-              category:
-                type: string
-        performance:
-          type: object
-          properties:
-            acceleration:
-              type: number
-              format: float
-            top_speed:
-              type: number
-              format: float
+            type: string
 
     CarForm:
       type: object
@@ -298,63 +333,128 @@ components:
         - name
         - brand
       properties:
+        url:
+          type: string
+          format: uri
+        id:
+          type: integer
         name:
           type: string
-          example: "Tesla Model 3"
+          maxLength: 100
         brand:
           type: string
-          example: "tesla"
-        description:
-          type: string
-        performance:
-          type: object
-          properties:
-            acceleration:
-              type: number
-            top_speed:
-              type: number
-        tags:
+        year:
+          type: integer
+          minimum: 1900
+          maximum: 2100
+          default: 2024
+        fuel_type:
           type: array
           items:
             type: string
+            enum: [P, D, E, H, C, X]
+        price_min:
+          type: integer
+          minimum: 0
+        price_max:
+          type: integer
+          minimum: 0
+        seats:
+          type: string
+          maxLength: 10
+        performance:
+          $ref: '#/components/schemas/Performance'
+
+    Performance:
+      type: object
+      properties:
+        top_speed:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Unit: km/h
+        acceleration_min:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 30
+          description: Unit: seconds
+        acceleration_max:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 30
+          description: Unit: seconds
 
     Engine:
       type: object
-      required:
-        - name
-        - power
       properties:
-        name:
+        id:
+          type: integer
+        cylinder_layout:
           type: string
-          example: "Dual Motor AWD"
-        power:
+          enum: [I, V, F, W, R]
+          description: |
+            - I: Inline/Straight
+            - V: V
+            - F: Flat/Boxer
+            - W: W
+            - R: Rotary/Wankel
+        cylinder_count:
+          type: integer
+          minimum: 1
+        aspiration:
+          type: string
+          enum: [T, S, W, Q, N]
+          description: |
+            - T: Turbocharged
+            - S: Supercharged
+            - W: Twin Turbo
+            - Q: Quad Turbo
+            - N: Naturally Aspirated
+        engine_capacity:
+          type: integer
+          minimum: 0
+          description: Unit: cc
+        battery_capacity:
           type: number
           format: float
-          example: 346
+          minimum: 0
+          description: Unit: kWh
+        horsepower:
+          type: integer
+          minimum: 0
+          description: Unit: hp
         torque:
-          type: number
-          format: float
-          example: 510
-        displacement:
-          type: number
-          format: float
-          example: null
+          type: integer
+          minimum: 0
+          description: Unit: Nm
+
+    Tag:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+            - Brand
+            - Fuel Type
+            - Engine
+            - Seats
+            - Price Range
+            - Displacement
+            - Performance Metrics
+        value:
+          type: string
 
     Brand:
       type: object
       properties:
-        slug:
-          type: string
-          example: "tesla"
         name:
           type: string
-          example: "Tesla"
-        country:
+          maxLength: 100
+        slug:
           type: string
-          example: "United States"
-        founded_year:
-          type: integer
-          example: 2003
+          maxLength: 100
 
     BrandDetail:
       allOf:
@@ -366,15 +466,30 @@ components:
               properties:
                 total_cars:
                   type: integer
-                  example: 5
-                average_power:
+                average_price:
                   type: number
                   format: float
-                  example: 450.5
-                price_range:
-                  type: object
-                  properties:
-                    min:
-                      type: number
-                    max:
-                      type: number
+                average_top_speed:
+                  type: number
+                  format: float
+                average_acceleration:
+                  type: number
+                  format: float
+                popular_engines:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      count:
+                        type: integer
+                popular_tags:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      count:
+                        type: integer

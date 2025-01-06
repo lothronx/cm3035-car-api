@@ -111,7 +111,7 @@ def _create_car(data: CarData) -> Optional[Car]:
     """
     try:
         performance = _create_performance(data.performance_data)
-        brand = Brand.objects.get_or_create(name=data.brand_name)[0]
+        brand = Brand.objects.get_or_create(name=data.brand_name, slug=slugify(data.brand_name))[0]
         fuel_types = _create_fuel_types(data.fuel_codes)
 
         car = Car.objects.create(

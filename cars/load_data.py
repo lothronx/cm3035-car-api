@@ -22,6 +22,8 @@ from .models import (
     Performance,
     FuelType,
     Engine,
+    Tag,
+    TagCategory,
 )
 
 
@@ -132,6 +134,17 @@ def _create_car(data: CarData) -> Optional[Car]:
         raise Exception(f'Failed to create car "{data.name}": {str(e)}') from e
 
 
+def _clean_all_tables():
+    """Delete all records from all tables in the correct order to handle dependencies."""
+    Tag.objects.all().delete()
+    TagCategory.objects.all().delete()
+    Engine.objects.all().delete()
+    Car.objects.all().delete()
+    Performance.objects.all().delete()
+    FuelType.objects.all().delete()
+    Brand.objects.all().delete()
+
+
 @transaction.atomic
 def load_data(csv_file_path: str) -> None:
     """Load car data from CSV and store in database.
@@ -139,6 +152,9 @@ def load_data(csv_file_path: str) -> None:
     Args:
         csv_file_path: Path to CSV file containing car data
     """
+    # Clean all existing data first
+    _clean_all_tables()
+
     if not os.path.exists(csv_file_path):
         raise FileNotFoundError(f"CSV file not found: {csv_file_path}")
 

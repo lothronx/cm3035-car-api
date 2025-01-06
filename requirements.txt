@@ -8,6 +8,7 @@ django-filter==24.3
 django-stubs==5.1.1
 django-stubs-ext==5.1.1
 djangorestframework==3.15.2
+drf-yasg==1.21.7
 hypothesis==6.123.2
 isort==5.13.2
 mccabe==0.7.0
@@ -15,10 +16,12 @@ platformdirs==4.3.6
 pylint==3.3.3
 pylint-django==2.6.1
 pylint-plugin-utils==0.8.2
+pyyaml==6.0.1
 setuptools==75.1.0
 sortedcontainers==2.4.0
 sqlparse==0.5.3
 tomlkit==0.13.2
 types-PyYAML==6.0.12.20241230
 typing_extensions==4.12.2
+uritemplate==4.1.1
 wheel==0.44.0

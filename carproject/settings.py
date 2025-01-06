@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_filters",
+    "hypothesis",
     "rest_framework",
     "debug_toolbar",
     "cars",

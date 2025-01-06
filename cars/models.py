@@ -107,7 +107,7 @@ class Car(models.Model):
     """
 
     name = models.CharField(max_length=100)
-    slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
+    slug = models.SlugField(max_length=100, unique=True, allow_unicode=True)
     brand = models.ForeignKey(Brand, on_delete=models.PROTECT)
     fuel_type = models.ManyToManyField(FuelType)
     performance = models.OneToOneField(
@@ -126,15 +126,15 @@ class Car(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(f"{self.brand.name} {self.name}")
+            self.slug = slugify(f"{self.brand.name}-{self.name}-{self.year}")
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.brand.name} - {self.name}"
+        return f"{self.brand.name} {self.name} ({self.year})"
 
     class Meta:
-        unique_together = ["brand", "name"]
-        ordering = ["brand", "name"]
+        ordering = ["brand__name", "name", "year"]
+        unique_together = ["brand", "name", "year"]
 
 
 class Engine(models.Model):
@@ -159,7 +159,6 @@ class Engine(models.Model):
         ("W", "W"),
         ("R", "Rotary/Wankel"),
     )
-
     ASPIRATION_TYPES = (
         ("T", "Turbocharged"),
         ("S", "Supercharged"),

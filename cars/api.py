@@ -83,15 +83,26 @@ class CarEngineViewSet(ModelViewSet):
     """
 
     serializer_class = CarEngineSerializer
-    queryset = Engine.objects.select_related("car").all()
+    queryset = Engine.objects.none()  # Start with empty queryset
 
     def get_queryset(self):
         """Filter engines by car if car_slug is provided."""
-        queryset = super().get_queryset()
         car_slug = self.kwargs.get("car_slug")
         if car_slug:
-            queryset = queryset.filter(car__slug=car_slug)
-        return queryset
+            # Check if car exists first
+            try:
+                car = Car.objects.get(slug=car_slug)
+                return Engine.objects.filter(car=car).order_by('id')  # Order by id for consistent results
+            except Car.DoesNotExist:
+                from rest_framework.exceptions import NotFound
+                raise NotFound(f"Car with slug '{car_slug}' does not exist")
+        return Engine.objects.none()  # Return empty queryset if no car_slug
+
+    def get_serializer_context(self):
+        """Add car_slug to serializer context."""
+        context = super().get_serializer_context()
+        context["car_slug"] = self.kwargs.get("car_slug")
+        return context
 
     def create(self, request, *args, **kwargs):
         """Create a new engine instance."""

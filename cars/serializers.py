@@ -9,6 +9,7 @@ from .utils.tag_helpers import create_or_update_car_tags
 
 class TagSerializer(serializers.ModelSerializer):
     """Serializer for tags with minimal necessary fields."""
+
     class Meta:
         model = Tag
         fields = ["category", "value"]
@@ -16,6 +17,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 class PerformanceSerializer(serializers.ModelSerializer):
     """Serializer for performance metrics."""
+
     class Meta:
         model = Performance
         fields = ["top_speed", "acceleration_min", "acceleration_max"]
@@ -23,6 +25,7 @@ class PerformanceSerializer(serializers.ModelSerializer):
 
 class CarListSerializer(serializers.ModelSerializer):
     """Simplified serializer for car list view."""
+
     url = serializers.HyperlinkedIdentityField(
         view_name="cars:car-detail", lookup_field="slug"
     )
@@ -40,6 +43,7 @@ class CarListSerializer(serializers.ModelSerializer):
 
 class CarDetailSerializer(serializers.ModelSerializer):
     """Detailed car serializer with all necessary fields."""
+
     brand = serializers.CharField(source="brand.name")
     price = serializers.SerializerMethodField()
     performance = PerformanceSerializer()
@@ -68,6 +72,7 @@ class CarDetailSerializer(serializers.ModelSerializer):
 
 class CarEngineSerializer(serializers.ModelSerializer):
     """Simplified engine serializer with validation."""
+
     class Meta:
         model = Engine
         fields = [
@@ -81,9 +86,25 @@ class CarEngineSerializer(serializers.ModelSerializer):
             "torque",
         ]
 
+    def create(self, validated_data):
+        """Create a new engine instance with car from context."""
+        car_slug = self.context.get("car_slug")
+        if not car_slug:
+            raise serializers.ValidationError("Car slug is required")
+
+        try:
+            car = Car.objects.get(slug=car_slug)
+        except Car.DoesNotExist:
+            raise serializers.ValidationError(
+                f"Car with slug '{car_slug}' does not exist"
+            )
+
+        return Engine.objects.create(car=car, **validated_data)
+
 
 class BrandSerializer(serializers.ModelSerializer):
     """Simple brand serializer."""
+
     class Meta:
         model = Brand
         fields = ["name", "slug"]
@@ -91,6 +112,7 @@ class BrandSerializer(serializers.ModelSerializer):
 
 class BrandField(serializers.CharField):
     """Custom field for handling brand names."""
+
     def to_representation(self, value):
         """Serialize the brand name.
 
@@ -110,6 +132,7 @@ class BrandField(serializers.CharField):
 
 class CarFormSerializer(serializers.ModelSerializer):
     """Serializer for the Car model form view."""
+
     url = serializers.HyperlinkedIdentityField(
         view_name="cars:car-detail", lookup_field="slug"
     )

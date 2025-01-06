@@ -8,7 +8,6 @@ import os
 from typing import Dict, Any, Optional, List, Set
 
 from django.db import transaction
-from django.utils.text import slugify
 
 from cars.utils.tag_helpers import create_car_tags
 from cars.utils.data_cleaners import (
@@ -111,12 +110,11 @@ def _create_car(data: CarData) -> Optional[Car]:
     """
     try:
         performance = _create_performance(data.performance_data)
-        brand = Brand.objects.get_or_create(name=data.brand_name, slug=slugify(data.brand_name))[0]
+        brand = Brand.objects.get_or_create(name=data.brand_name)[0]
         fuel_types = _create_fuel_types(data.fuel_codes)
 
         car = Car.objects.create(
             name=data.name,
-            slug=slugify(f"{data.brand_name} {data.name}"),
             brand=brand,
             performance=performance,
             seats=data.seats,

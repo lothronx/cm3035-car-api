@@ -5,6 +5,7 @@ Data models for the cars app.
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.utils.text import slugify
 
 
 # Create your models here.
@@ -18,6 +19,11 @@ class Brand(models.Model):
 
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=100, unique=True, allow_unicode=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name}"
@@ -82,14 +88,16 @@ class Performance(models.Model):
 
     @property
     def acceleration(self):
+        if not (self.acceleration_min or self.acceleration_max):
+            return None
         return (
-            self.acceleration_min
+            f"{self.acceleration_min:.1f} seconds"
             if self.acceleration_min == self.acceleration_max
-            else f"{self.acceleration_min}-{self.acceleration_max}"
+            else f"{self.acceleration_min:.1f}-{self.acceleration_max:.1f} seconds"
         )
 
     def __str__(self):
-        return f"Top Speed: {self.top_speed} km/h, Acceleration: {self.acceleration} seconds"
+        return f"Top Speed: {self.top_speed} km/h, Acceleration: {self.acceleration}"
 
 
 class Car(models.Model):
@@ -128,14 +136,21 @@ class Car(models.Model):
 
     @property
     def price(self):
+        if not (self.price_min or self.price_max):
+            return None
         return (
-            f"${self.price_min}"
+            f"${self.price_min:,}"
             if self.price_min == self.price_max
-            else f"${self.price_min}-{self.price_max}"
+            else f"${self.price_min:,}-${self.price_max:,}"
         )
 
     def __str__(self):
         return f"{self.brand.name} {self.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(f"{self.brand.name}-{self.name}")
+        super().save(*args, **kwargs)
 
     class Meta:
         unique_together = ["brand", "name"]
@@ -298,6 +313,11 @@ class Tag(models.Model):
     slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
     cars = models.ManyToManyField(Car)
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(f"{self.category.name}-{self.value}")
+        super().save(*args, **kwargs)
+
     def clean(self):
         """Validates that the tag value is allowed for its category."""
         allowed_values = self.category.get_allowed_values()
@@ -305,10 +325,6 @@ class Tag(models.Model):
             raise ValidationError(
                 f"Invalid value '{self.value}' for category '{self.category.name}'"
             )
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.category.name}: {self.value}"

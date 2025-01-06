@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Project</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'cars:index' %}">Car Project</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'schema-swagger-ui' %}">API Documentation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'schema-redoc' %}">ReDoc</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="jumbotron">
+            <h1 class="display-4">Welcome to Car Project</h1>
+            <p class="lead">A comprehensive API for managing cars, engines, and brands.</p>
+            <hr class="my-4">
+            <p>Explore our API documentation to learn more about available endpoints and features.</p>
+            <div class="d-grid gap-2 d-md-block">
+                <a class="btn btn-primary btn-lg me-2" href="{% url 'schema-swagger-ui' %}" role="button">View Swagger UI</a>
+                <a class="btn btn-success btn-lg" href="{% url 'schema-redoc' %}" role="button">View ReDoc</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

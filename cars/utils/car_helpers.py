@@ -74,9 +74,6 @@ def create_or_update_car(
                 car.performance = performance
                 car.save()
 
-        # Create tags
-        create_or_update_car_tags(car)
-
         return car
     except Exception as e:
         raise Exception(

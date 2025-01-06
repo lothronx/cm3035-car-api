@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Car, Brand, Performance, FuelType, Engine, Tag, TagCategory
 from .utils.car_helpers import create_or_update_car, get_or_create_brand
-
+from .utils.tag_helpers import create_or_update_car_tags
 
 class TagSerializer(serializers.ModelSerializer):
     category = serializers.CharField(source="category.name", read_only=True)
@@ -127,10 +127,14 @@ class CarFormSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        return create_or_update_car(validated_data)
+        car = create_or_update_car(validated_data)
+        create_or_update_car_tags(car)
+        return car
 
     def update(self, instance, validated_data):
-        return create_or_update_car(validated_data, instance)
+        car = create_or_update_car(validated_data, instance)
+        create_or_update_car_tags(car)
+        return car
 
 
 class CarEngineSerializer(serializers.ModelSerializer):
@@ -150,4 +154,13 @@ class CarEngineSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         car_slug = self.context["view"].kwargs.get("car_slug")
         car = Car.objects.get(slug=car_slug)
-        return Engine.objects.create(car=car, **validated_data)
+        engine = Engine.objects.create(car=car, **validated_data)
+        create_or_update_car_tags(car)
+        return engine
+
+    def update(self, instance, validated_data):
+        car_slug = self.context["view"].kwargs.get("car_slug")
+        car = Car.objects.get(slug=car_slug)
+        engine = Engine.objects.update(car=car, **validated_data)
+        create_or_update_car_tags(car)
+        return engine

@@ -87,7 +87,7 @@ class Performance(models.Model):
     )
 
     def __str__(self):
-        return f"Top Speed: {self.top_speed} km/h, Acceleration: {self.acceleration_min:.1f}-{self.acceleration_max:.1f} seconds"
+        return f"Top Speed: {self.top_speed} km/h, Acceleration: {self.acceleration_min}-{self.acceleration_max} seconds"
 
 
 class Car(models.Model):

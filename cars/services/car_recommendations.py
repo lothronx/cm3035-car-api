@@ -1,133 +1,198 @@
 """
-Service for generating car recommendations based on similarity metrics.
+Service for generating car recommendations based on similarity metrics
+including price, performance, brand, and tags. 
 """
 
 from django.db.models import F, Q, Case, When, Count, FloatField
 from django.db.models.functions import Abs
-from ..models import Car
+from cars.models import Car
 
 
-class CarSimilarityCalculator:
+def calculate_average_price(car):
     """
-    Calculates similarity scores between cars based on various metrics.
-    """
-    
-    def __init__(self, reference_car):
-        """
-        Initialize calculator with a reference car.
-        
-        Args:
-            reference_car (Car): The car to find similarities for
-        """
-        self.reference_car = reference_car
-        self.weights = {
-            'price': 0.3,
-            'performance': 0.3,
-            'brand': 0.2,
-            'tags': 0.2
-        }
-    
-    def _get_average_price(self):
-        """Calculate average price for the reference car."""
-        if self.reference_car.price_min and self.reference_car.price_max:
-            return (self.reference_car.price_min + self.reference_car.price_max) / 2
-        return None
+    Calculate the average price for a car if both min and max prices are available.
 
-    def _get_price_similarity_annotation(self):
-        """Generate annotation for price similarity."""
-        car_avg_price = self._get_average_price()
-        return Case(
-            When(
-                price_min__isnull=False,
-                price_max__isnull=False,
-                then=Case(
-                    When(
-                        Q(price_min__isnull=False) & 
-                        Q(price_max__isnull=False) & 
-                        Q(avg_price__gt=0),
-                        then=1.0 - Abs(F('avg_price') - car_avg_price) / car_avg_price if car_avg_price else 0
-                    ),
-                    default=0,
-                    output_field=FloatField(),
+    Args:
+        car (Car): The car object to calculate average price for
+
+    Returns:
+        float|None: Average price if both min and max prices exist, None otherwise
+    """
+    if car.price_min and car.price_max:
+        return (car.price_min + car.price_max) / 2
+    return None
+
+
+def get_price_similarity_annotation(reference_car):
+    """
+    Generate annotation for calculating price similarity between cars.
+
+    Args:
+        reference_car (Car): The reference car to compare prices against
+
+    Returns:
+        Case: Django ORM annotation for price similarity calculation
+    """
+    car_avg_price = calculate_average_price(reference_car)
+    if not car_avg_price:
+        return Case(default=0, output_field=FloatField())
+
+    return Case(
+        When(
+            price_min__isnull=False,
+            price_max__isnull=False,
+            then=1.0
+            - Abs((F("price_min") + F("price_max")) / 2 - car_avg_price)
+            / car_avg_price,
+        ),
+        default=0,
+        output_field=FloatField(),
+    )
+
+
+def get_performance_similarity_annotation(reference_car):
+    """
+    Generate annotation for calculating performance similarity between cars.
+
+    Args:
+        reference_car (Car): The reference car to compare performance against
+
+    Returns:
+        Case: Django ORM annotation for performance similarity calculation
+    """
+    if not reference_car.performance:
+        return Case(default=0, output_field=FloatField())
+
+    return Case(
+        When(
+            performance__isnull=False,
+            then=(
+                (
+                    1.0
+                    - Abs(
+                        F("performance__top_speed")
+                        - reference_car.performance.top_speed
+                    )
+                    / reference_car.performance.top_speed
+                    if reference_car.performance.top_speed
+                    else 0
                 )
-            ),
-            default=0,
-            output_field=FloatField(),
-        )
-
-    def _get_performance_similarity_annotation(self):
-        """Generate annotation for performance similarity."""
-        return Case(
-            When(
-                performance__isnull=False,
-                then=(
-                    (1.0 - Abs(F('performance__top_speed') - self.reference_car.performance.top_speed) 
-                     / self.reference_car.performance.top_speed 
-                     if self.reference_car.performance and self.reference_car.performance.top_speed else 0) +
-                    (1.0 - Abs(F('performance__acceleration_min') - self.reference_car.performance.acceleration_min) 
-                     / self.reference_car.performance.acceleration_min 
-                     if self.reference_car.performance and self.reference_car.performance.acceleration_min else 0)
-                ) / 2,
-            ),
-            default=0,
-            output_field=FloatField(),
-        )
-
-    def _get_brand_similarity_annotation(self):
-        """Generate annotation for brand similarity."""
-        return Case(
-            When(brand=self.reference_car.brand, then=1.0),
-            default=0,
-            output_field=FloatField(),
-        )
-
-    def _get_tag_similarity_annotation(self):
-        """Generate annotation for tag similarity."""
-        return Case(
-            When(
-                Q(matching_tags__gt=0) & Q(tag__isnull=False),
-                then=F('matching_tags') * 1.0 / self.reference_car.tag_set.count() 
-                     if self.reference_car.tag_set.exists() else 0
-            ),
-            default=0,
-            output_field=FloatField(),
-        )
+                + (
+                    1.0
+                    - Abs(
+                        F("performance__acceleration_min")
+                        - reference_car.performance.acceleration_min
+                    )
+                    / reference_car.performance.acceleration_min
+                    if reference_car.performance.acceleration_min
+                    else 0
+                )
+            )
+            / 2,
+        ),
+        default=0,
+        output_field=FloatField(),
+    )
 
 
-def get_similar_cars(car, limit=5):
+def get_brand_similarity_annotation(reference_car):
+    """
+    Generate annotation for brand similarity (exact match only).
+
+    Args:
+        reference_car (Car): The reference car to compare brand against
+
+    Returns:
+        Case: Django ORM annotation for brand similarity calculation
+    """
+    return Case(
+        When(brand=reference_car.brand, then=1.0),
+        default=0,
+        output_field=FloatField(),
+    )
+
+
+def get_tag_similarity_annotation(reference_car):
+    """
+    Generate annotation for calculating tag similarity between cars.
+
+    Args:
+        reference_car (Car): The reference car to compare tags against
+
+    Returns:
+        Case: Django ORM annotation for tag similarity calculation
+    """
+    tag_count = reference_car.tag_set.count()
+    if not tag_count:
+        return Case(default=0, output_field=FloatField())
+
+    return Case(
+        When(matching_tags__gt=0, then=F("matching_tags") * 1.0 / tag_count),
+        default=0,
+        output_field=FloatField(),
+    )
+
+
+def calculate_similarity_score(price_sim, perf_sim, brand_sim, tag_sim, weights=None):
+    """
+    Calculate the overall similarity score based on individual metrics.
+
+    Args:
+        price_sim (float): Price similarity score
+        perf_sim (float): Performance similarity score
+        brand_sim (float): Brand similarity score
+        tag_sim (float): Tag similarity score
+        weights (dict, optional): Custom weights for each metric.
+                                Defaults to predefined weights.
+
+    Returns:
+        float: Overall similarity score
+    """
+    if weights is None:
+        weights = {"price": 0.3, "performance": 0.3, "brand": 0.2, "tags": 0.2}
+
+    return (
+        price_sim * weights["price"]
+        + perf_sim * weights["performance"]
+        + brand_sim * weights["brand"]
+        + tag_sim * weights["tags"]
+    )
+
+
+def get_similar_cars(car, limit=5, weights=None):
     """
     Get similar cars based on multiple similarity metrics.
-    
+
+    This function calculates similarity scores based on price, performance,
+    brand, and tags, then returns the most similar cars ordered by their
+    overall similarity score.
+
     Args:
         car (Car): Reference car to find similarities for
-        limit (int): Maximum number of similar cars to return
-        
+        limit (int, optional): Maximum number of similar cars to return. Defaults to 5.
+        weights (dict, optional): Custom weights for similarity metrics.
+                                Defaults to predefined weights.
+
     Returns:
         QuerySet: Similar cars ordered by similarity score
     """
-    calculator = CarSimilarityCalculator(car)
-    
-    return (
+    recommendations = (
         Car.objects.exclude(id=car.id)
         .annotate(
-            # Calculate average price for comparison
-            avg_price=(F('price_min') + F('price_max')) / 2,
-            # Similarity metrics
-            price_similarity=calculator._get_price_similarity_annotation(),
-            performance_similarity=calculator._get_performance_similarity_annotation(),
-            brand_similarity=calculator._get_brand_similarity_annotation(),
-            # Tag similarity (percentage of matching tags)
-            matching_tags=Count('tag', filter=Q(tag__in=car.tag_set.all())),
-            tag_similarity=calculator._get_tag_similarity_annotation(),
+            matching_tags=Count("tag", filter=Q(tag__in=car.tag_set.all())),
+            price_similarity=get_price_similarity_annotation(car),
+            performance_similarity=get_performance_similarity_annotation(car),
+            brand_similarity=get_brand_similarity_annotation(car),
+            tag_similarity=get_tag_similarity_annotation(car),
+            similarity_score=calculate_similarity_score(
+                F("price_similarity"),
+                F("performance_similarity"),
+                F("brand_similarity"),
+                F("tag_similarity"),
+                weights,
+            ),
         )
-        .annotate(
-            # Calculate overall similarity score (weighted average)
-            similarity_score=(
-                F('price_similarity') * calculator.weights['price'] +
-                F('performance_similarity') * calculator.weights['performance'] +
-                F('brand_similarity') * calculator.weights['brand'] +
-                F('tag_similarity') * calculator.weights['tags']
-            )
-        )
-        .order_by('-similarity_score')[:limit]
+        .order_by("-similarity_score")[:limit]
     )
+
+    return recommendations

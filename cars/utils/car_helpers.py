@@ -1,4 +1,4 @@
-"""Helper functions for car creation and updates."""
+"""Helper functions for car-related creation and updates."""
 
 from typing import Dict, Any, Optional, List, Set
 
@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from cars.models import Car, Brand, Performance, FuelType, Engine, Tag, TagCategory
 from cars.utils.tag_helpers import create_or_update_car_tags
-from cars.utils.data_cleaners import clean_car_data, CarData
+from cars.utils.data_cleaners import CarData
 
 
 def get_or_create_brand(name: str) -> Brand:

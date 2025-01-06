@@ -14,26 +14,75 @@ def get_average_price(cars):
     return f"${round(avg_price, 2) if avg_price else None}"
 
 
+def calculate_average_metric(queryset, field_path, decimal_places=2, unit=""):
+    """
+    Calculate the average value for a specific metric from a queryset.
+
+    Args:
+        queryset: Django queryset containing the data
+        field_path: String path to the field to average
+        decimal_places: Number of decimal places to round to (default: 2)
+        unit: Unit of measurement to append to the result (default: "")
+
+    Returns:
+        str: Formatted string with the average value and unit, or None if no data
+    """
+    avg_value = queryset.aggregate(avg=Avg(field_path))["avg"]
+    if avg_value is None:
+        return None
+    return f"{round(avg_value, decimal_places)} {unit}".strip()
+
+
+def calculate_average_range_metric(queryset, min_field, max_field, decimal_places=2, unit=""):
+    """
+    Calculate the average of a range metric (using min and max fields).
+
+    Args:
+        queryset: Django queryset containing the data
+        min_field: Field name for minimum value
+        max_field: Field name for maximum value
+        decimal_places: Number of decimal places to round to (default: 2)
+        unit: Unit of measurement to append to the result (default: "")
+
+    Returns:
+        str: Formatted string with the average value and unit, or None if no data
+    """
+    avg_value = queryset.aggregate(
+        avg=(Avg(min_field) + Avg(max_field)) / 2
+    )["avg"]
+    if avg_value is None:
+        return None
+    return f"{round(avg_value, decimal_places)} {unit}".strip()
+
+
 def get_performance_metrics(cars):
-    """Calculate average performance metrics for a set of cars."""
-    avg_top_speed = cars.aggregate(avg_top_speed=Avg("performance__top_speed"))[
-        "avg_top_speed"
-    ]
-    avg_top_speed = f"{round(avg_top_speed, 2) if avg_top_speed else None} km/h"
+    """
+    Calculate average performance metrics for a set of cars.
 
-    avg_acceleration = cars.aggregate(
-        avg_acceleration=(
-            Avg("performance__acceleration_min") + Avg("performance__acceleration_max")
-        )
-        / 2
-    )["avg_acceleration"]
-    avg_acceleration = (
-        f"{round(avg_acceleration, 2) if avg_acceleration else None} seconds"
-    )
+    This function computes two key performance indicators:
+    1. Average top speed across all cars
+    2. Average acceleration (mean of min and max acceleration)
 
+    Args:
+        cars: QuerySet of Car objects
+
+    Returns:
+        dict: Dictionary containing:
+            - average_top_speed: Formatted string with speed in km/h
+            - average_acceleration: Formatted string with time in seconds
+    """
     return {
-        "average_top_speed": avg_top_speed,
-        "average_acceleration": avg_acceleration,
+        "average_top_speed": calculate_average_metric(
+            cars, 
+            "performance__top_speed", 
+            unit="km/h"
+        ),
+        "average_acceleration": calculate_average_range_metric(
+            cars,
+            "performance__acceleration_min",
+            "performance__acceleration_max",
+            unit="seconds"
+        ),
     }
 
 

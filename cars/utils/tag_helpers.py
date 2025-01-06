@@ -24,6 +24,7 @@ def create_or_update_car_tags(car):
 
     for name in categories.keys():
         categories[name], _ = TagCategory.objects.get_or_create(name=name)
+
         # Remove all existing tags for this category and car
         Tag.objects.filter(category=categories[name], cars=car).delete()
 
@@ -136,13 +137,19 @@ def _create_performance_tags(car, category):
     """
 
     # High Torque tag (check all engines)
-    if any((engine.torque is not None and engine.torque > 500) for engine in car.engine_set.all()):
+    if any(
+        (engine.torque is not None and engine.torque > 500)
+        for engine in car.engine_set.all()
+    ):
         _create_tag(car, category, "High Torque")
 
     # Get performance metrics
     if car.performance is not None:
         # Fast Acceleration tag
-        if car.performance.acceleration_min is not None and car.performance.acceleration_min < 4.0:
+        if (
+            car.performance.acceleration_min is not None
+            and car.performance.acceleration_min < 4.0
+        ):
             _create_tag(car, category, "Fast Acceleration")
 
         # Top Speed tag

@@ -1,7 +1,7 @@
 import factory
 from rest_framework.test import APITestCase
 from cars.models import Car, Brand, Performance, FuelType, Engine
-from cars.test_cases.factories import BrandFactory, CarFactory, PerformanceFactory
+from .factories import BrandFactory, CarFactory, PerformanceFactory
 
 class BrandAPITest(APITestCase):
     """Test cases for the Brand API endpoints."""

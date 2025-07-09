@@ -1,4 +1,4 @@
-# 🚗 Car-themed RESTful Web Application
+# 🚘 Car-themed RESTful Web Application
 
 [![Django](https://img.shields.io/badge/Django-5.1.4-092E20?style=for-the-badge&logo=django&logoColor=white)](https://djangoproject.com/)
 [![Django REST Framework](https://img.shields.io/badge/DRF-3.15.2-ff1709?style=for-the-badge&logo=django&logoColor=white)](https://www.django-rest-framework.org/)

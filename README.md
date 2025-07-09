@@ -16,8 +16,6 @@ A comprehensive RESTful web application built with Django and Django REST Framew
 
 [![Watch Demo](https://img.youtube.com/vi/r6YzDdX4hO0/maxresdefault.jpg)](https://www.youtube.com/watch?v=r6YzDdX4hO0&ab_channel=WuYue)
 
-  
-
 </div>
 
 ## 🎯 Why I Built This Project
